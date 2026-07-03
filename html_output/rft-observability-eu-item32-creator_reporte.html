@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Auditoría - rft-observability-eu-item32-creator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; }
+        .text-pink { color: #d63384; }
+        .score-card {
+            min-width: 120px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="py-5">
+
+    <div class="container">
+        
+        <div class="card shadow-sm border-0 border-start border-primary border-5 mb-4">
+            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center p-4">
+                <div>
+                    <h1 class="display-6 fw-bold text-primary mb-1">
+                        <i class="bi bi-shield-lock me-2"></i>Reporte de Auditoría de Código
+                    </h1>
+                    <p class="text-muted mb-1 fs-5"><strong>Microservicio:</strong> rft-observability-eu-item32-creator</p>
+                    <p class="text-muted mb-0 small"><i class="bi bi-clock me-1"></i>Fecha de escaneo: 2026-06-30 10:03:10</p>
+                </div>
+                
+                <div class="score-card mt-3 mt-md-0 ms-md-4 p-3 rounded-3 shadow-sm text-white bg-success">
+                    <div class="display-5 fw-bold mb-0">85</div>
+                    <div class="text-uppercase small fw-semibold" style="letter-spacing: 1px; opacity: 0.9;">Score Calidad</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h3 class="h5 mb-0 text-secondary"><i class="bi bi-diagram-3 me-2"></i>Resumen de Arquitectura</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-secondary lh-lg">El microservicio 'rft-observability-item32-creator' es una aplicación Spring Boot (Java 17) diseñada para generar informes CSV (Item32A, Item32B, Item32C) basados en datos de múltiples fuentes. Utiliza Apache Kafka para la comunicación asíncrona, actuando como consumidor de comandos de ítems y productor de respuestas de estado. La persistencia de datos se gestiona a través de JPA/Hibernate, conectándose a bases de datos Kudu/Impala y SQL Server. Las consultas a Kudu/Impala también se realizan directamente mediante JdbcTemplate para casos específicos. La configuración de la aplicación se externaliza utilizando Spring Boot Configuration Properties y archivos YAML, con variables de entorno para datos sensibles. El proceso de CI/CD se gestiona con GitLab CI, utilizando Maven y plantillas de pipeline compartidas, lo que sugiere un despliegue en Kubernetes (referencia a Helm chart values). La aplicación sigue un patrón de estrategia para el procesamiento de diferentes tipos de ítems y genera archivos CSV en una ruta de salida configurable.</p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Puntos Críticos de Seguridad</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle mb-0">
+                        <thead class="table-light text-secondary">
+                            <tr>
+                                <th scope="col" class="ps-4">Archivo Afectado</th>
+                                <th scope="col" class="text-center">Severidad</th>
+                                <th scope="col">Vulnerabilidad</th>
+                                <th scope="col" class="pe-4">Solución Recomendada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\java\com\sixgroup\refit\observability\item32\creator\modules\application\services\Item32ADataFinderService.java</code></td>
+                <td class="text-center align-middle"><span class="badge bg-danger rounded-pill px-3 py-2">ALTA</span></td>
+                <td>Inyección SQL por concatenación de nombres de esquema. Las consultas SQL utilizan `String.formatted()` para insertar nombres de esquema (`schemaProperties.getTranscSchema()`, `schemaProperties.getControlRefitSchema()`) directamente en la cadena de consulta. Si estos nombres de esquema pudieran ser manipulados por una entrada no confiable (por ejemplo, a través de variables de entorno controladas por un atacante), esto podría llevar a una inyección SQL.</td>
+                <td>Validar estrictamente los nombres de esquema contra una lista blanca de valores permitidos antes de usarlos en la consulta. Idealmente, los nombres de tablas y esquemas no deberían ser dinámicos basados en entradas externas. Si deben serlo, la validación es crucial.</td>
+            </tr>
+            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\java\com\sixgroup\refit\observability\item32\creator\modules\application\services\Item32BDataFinderService.java</code></td>
+                <td class="text-center align-middle"><span class="badge bg-danger rounded-pill px-3 py-2">ALTA</span></td>
+                <td>Inyección SQL por concatenación de nombres de esquema. Similar a Item32ADataFinderService, la consulta SQL para Item32B utiliza `String.formatted()` para insertar el nombre del esquema (`schemaProperties.getTranscSchema()`) directamente en la cadena de consulta, lo que representa un riesgo de inyección SQL si la entrada no es confiable.</td>
+                <td>Validar estrictamente los nombres de esquema contra una lista blanca de valores permitidos antes de usarlos en la consulta.</td>
+            </tr>
+            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\java\com\sixgroup\refit\observability\item32\creator\modules\infrastructure\repository\kudu\Item32CImpalaRepository.java</code></td>
+                <td class="text-center align-middle"><span class="badge bg-danger rounded-pill px-3 py-2">ALTA</span></td>
+                <td>Inyección SQL por concatenación de nombres de esquema. La consulta SQL para Item32C utiliza `String.format()` para insertar nombres de esquema (`schemaProperties.getAccountMng()`, `schemaProperties.getControlRefitSchema()`) directamente en la cadena de consulta. Aunque otros parámetros se manejan con `?`, la inyección de nombres de esquema sigue siendo un riesgo significativo.</td>
+                <td>Validar estrictamente los nombres de esquema contra una lista blanca de valores permitidos antes de usarlos en la consulta. Evitar la concatenación directa de cualquier entrada externa en las consultas SQL.</td>
+            </tr>
+            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\resources\config\application.yml</code></td>
+                <td class="text-center align-middle"><span class="badge bg-danger rounded-pill px-3 py-2">ALTA</span></td>
+                <td>Credenciales de base de datos por defecto inseguras y configuración de autenticación débil. El archivo `application.yml` define valores por defecto (`sa`, `secret`) para `username` y `password` de SQL Server, y `AuthMech=0` (sin autenticación) para Kudu/Impala. Estos valores son altamente inseguros y no deben usarse en entornos de producción, incluso si se espera que las variables de entorno los sobrescriban.</td>
+                <td>Eliminar los valores por defecto inseguros de `application.yml` o establecerlos como cadenas vacías. Asegurar que las credenciales de producción se gestionen a través de un sistema de gestión de secretos seguro (ej. HashiCorp Vault, Kubernetes Secrets) y que Kudu/Impala utilice mecanismos de autenticación robustos (ej. Kerberos, TLS) en producción.</td>
+            </tr>
+            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\java\com\sixgroup\refit\observability\item32\creator\modules\application\services\Item32ADataFinderService.java</code></td>
+                <td class="text-center align-middle"><span class="badge bg-warning text-dark rounded-pill px-3 py-2">MEDIA</span></td>
+                <td>Fuga de información en logs. Las sentencias `log.trace(query.replace("?", "'" + dateTo + "'"));` (y similares en Item32B) imprimen la consulta SQL completa con los parámetros interpolados directamente. Aunque es a nivel TRACE, si este nivel de log se habilita accidentalmente en producción, podría exponer datos sensibles o la estructura interna de la base de datos.</td>
+                <td>Evitar la interpolación directa de parámetros en las consultas loggeadas. En su lugar, loggear la plantilla de la consulta y los parámetros por separado. Por ejemplo, `log.trace("Query: {}", query); log.trace("Parameters: {}", dateTo);`.</td>
+            </tr>
+            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\java\com\sixgroup\refit\observability\item32\creator\modules\infrastructure\repository\csv\CsvItem32AWriteListFileRepository.java</code></td>
+                <td class="text-center align-middle"><span class="badge bg-warning text-dark rounded-pill px-3 py-2">MEDIA</span></td>
+                <td>Potencial vulnerabilidad de Path Traversal. La ruta del archivo CSV se construye concatenando `csvProperties.getOutputPath()` y `fileName`. Si `fileName` (derivado de `itemDate` y `fileNamePattern`) puede ser manipulado por un atacante para incluir secuencias de path traversal (ej. `../../`), se podrían escribir archivos en ubicaciones arbitrarias del sistema de archivos.</td>
+                <td>Implementar una validación estricta y saneamiento de `fileName` para asegurar que no contenga caracteres o secuencias que permitan el path traversal. Utilizar `java.nio.file.Path.normalize()` y `Path.startsWith()` para confinar la escritura de archivos al directorio de salida previsto.</td>
+            </tr>
+            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\resources\config\application.yml</code></td>
+                <td class="text-center align-middle"><span class="badge bg-warning text-dark rounded-pill px-3 py-2">MEDIA</span></td>
+                <td>Configuración de Kafka Schema Registry insegura. La URL de Schema Registry está configurada como `http://localhost:8081` en el perfil por defecto. En un entorno de producción, esta conexión debería ser segura (HTTPS) y, si es necesario, autenticada para proteger los esquemas y la comunicación.</td>
+                <td>Configurar `schema.registry.url` para usar HTTPS y, si es aplicable, credenciales de autenticación en entornos de producción. Asegurar que el Schema Registry esté protegido adecuadamente.</td>
+            </tr>
+            
+            <tr>
+                <td class="text-break"><code class="text-pink">source\src\main\java\com\sixgroup\refit\observability\item32\creator\modules\infrastructure\consumer\KafkaConsumerItem.java</code></td>
+                <td class="text-center align-middle"><span class="badge bg-info text-dark rounded-pill px-3 py-2">BAJA</span></td>
+                <td>Validación de entrada limitada en mensajes Kafka. El método `isRequestTypeAccepted` solo verifica si `itemType` está en una lista predefinida. No hay una validación exhaustiva del formato o contenido de otros campos como `itemDate` en `ItemCommandDTO` antes de su procesamiento, lo que podría llevar a errores inesperados o a la propagación de datos malformados.</td>
+                <td>Implementar una validación de entrada más robusta para todos los campos de `ItemCommandDTO` recibidos a través de Kafka, asegurando que los datos cumplan con los formatos y rangos esperados. Esto puede incluir el uso de anotaciones de validación de Jakarta Bean Validation.</td>
+            </tr>
+            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h3 class="h5 mb-0 text-success"><i class="bi bi-lightbulb me-2"></i>Conclusiones y Recomendaciones</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-secondary lh-lg">El microservicio `rft-observability-item32-creator` presenta una arquitectura bien estructurada con una clara separación de responsabilidades, utilizando Spring Boot y patrones de diseño como la estrategia. La modularidad y la externalización de la configuración son puntos fuertes. Sin embargo, se han identificado vulnerabilidades críticas relacionadas con la inyección SQL debido a la concatenación de nombres de esquema en las consultas, credenciales de base de datos por defecto inseguras y una configuración de autenticación débil para Kudu/Impala en los perfiles de configuración. También existe un riesgo potencial de path traversal en la generación de archivos CSV y una fuga de información en los logs de traza. Se recomienda encarecidamente abordar estas vulnerabilidades de alta y media severidad para mejorar la postura de seguridad del servicio, especialmente en entornos de producción. La implementación de validaciones de entrada más estrictas y la securización de las comunicaciones de Kafka y Schema Registry también son pasos importantes para fortalecer la seguridad general.</p>
+            </div>
+        </div>
+
+        <footer class="text-center text-muted mt-5 mb-3">
+            <small>Generado automáticamente por el Pipeline de Auditoría de IA &middot; Bootstrap 5</small>
+        </footer>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>
+    

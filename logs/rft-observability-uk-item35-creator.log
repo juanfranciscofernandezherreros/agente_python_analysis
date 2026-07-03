@@ -1,0 +1,22 @@
+2026-07-03 12:29:48 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: rft-observability-uk-item35-creator ---
+2026-07-03 12:29:53 [INFO] Traceback (most recent call last):
+2026-07-03 12:29:53 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 164, in <module>
+2026-07-03 12:29:53 [INFO]     main()
+2026-07-03 12:29:53 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 137, in main
+2026-07-03 12:29:53 [INFO]     codigo_proyecto = extraer_codigo_base(args.target_path)
+2026-07-03 12:29:53 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 26, in extraer_codigo_base
+2026-07-03 12:29:53 [INFO]     print(f"   \u21b3 [Agente]: Extrayendo archivos desde {target_path}...")
+2026-07-03 12:29:53 [INFO]   File "C:\Program Files\Python39\lib\encodings\cp1252.py", line 19, in encode
+2026-07-03 12:29:53 [INFO]     return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+2026-07-03 12:29:53 [INFO] UnicodeEncodeError: 'charmap' codec can't encode character '\u21b3' in position 3: character maps to <undefined>
+2026-07-03 15:24:57 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: rft-observability-uk-item35-creator ---
+2026-07-03 15:25:01 [INFO] Traceback (most recent call last):
+2026-07-03 15:25:01 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 164, in <module>
+2026-07-03 15:25:01 [INFO]     main()
+2026-07-03 15:25:01 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 137, in main
+2026-07-03 15:25:01 [INFO]     codigo_proyecto = extraer_codigo_base(args.target_path)
+2026-07-03 15:25:01 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 26, in extraer_codigo_base
+2026-07-03 15:25:01 [INFO]     print(f"   \u21b3 [Agente]: Extrayendo archivos desde {target_path}...")
+2026-07-03 15:25:01 [INFO]   File "C:\Program Files\Python39\lib\encodings\cp1252.py", line 19, in encode
+2026-07-03 15:25:01 [INFO]     return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+2026-07-03 15:25:01 [INFO] UnicodeEncodeError: 'charmap' codec can't encode character '\u21b3' in position 3: character maps to <undefined>

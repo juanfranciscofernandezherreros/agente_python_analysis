@@ -1,0 +1,12 @@
+2026-07-03 09:26:25 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
+2026-07-03 10:21:41 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
+2026-07-03 10:21:47 [INFO] Traceback (most recent call last):
+2026-07-03 10:21:47 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 164, in <module>
+2026-07-03 10:21:47 [INFO]     main()
+2026-07-03 10:21:47 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 137, in main
+2026-07-03 10:21:47 [INFO]     codigo_proyecto = extraer_codigo_base(args.target_path)
+2026-07-03 10:21:47 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 26, in extraer_codigo_base
+2026-07-03 10:21:47 [INFO]     print(f"   \u21b3 [Agente]: Extrayendo archivos desde {target_path}...")
+2026-07-03 10:21:47 [INFO]   File "C:\Program Files\Python39\lib\encodings\cp1252.py", line 19, in encode
+2026-07-03 10:21:47 [INFO]     return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+2026-07-03 10:21:47 [INFO] UnicodeEncodeError: 'charmap' codec can't encode character '\u21b3' in position 3: character maps to <undefined>

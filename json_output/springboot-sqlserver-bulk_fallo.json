@@ -1,0 +1,13 @@
+[
+    {
+        "fecha_hora": "2026-07-02 15:14:37",
+        "microservicio": "springboot-sqlserver-bulk",
+        "ruta_origen": "C:/Develop/springboot-sqlserver-bulk",
+        "etapa_fallida": "Ejecución de Agente",
+        "detalles_error": {
+            "tipo": "CalledProcessError",
+            "mensaje": "Command '['C:\\\\Program Files\\\\Python39\\\\python.exe', 'code_auditor_agent.py', 'C:\\\\Develop\\\\springboot-sqlserver-bulk', '--cambios', 'Puedes imprimirme todo el arbol de ficheros']' returned non-zero exit status 1.",
+            "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\tx1f6\\OneDrive - SIX\\Escritorio\\agente_python\\orchestrator.py\", line 238, in procesar_repo\n    resultado = subprocess.run(comando, env=entorno_subproceso, check=True, capture_output=True, text=True, encoding='utf-8')\n  File \"C:\\Program Files\\Python39\\lib\\subprocess.py\", line 528, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['C:\\\\Program Files\\\\Python39\\\\python.exe', 'code_auditor_agent.py', 'C:\\\\Develop\\\\springboot-sqlserver-bulk', '--cambios', 'Puedes imprimirme todo el arbol de ficheros']' returned non-zero exit status 1.\n"
+        }
+    }
+]

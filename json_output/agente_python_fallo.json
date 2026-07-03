@@ -1,0 +1,13 @@
+[
+    {
+        "fecha_hora": "2026-07-03 10:21:48",
+        "microservicio": "agente_python",
+        "ruta_origen": "C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python",
+        "etapa_fallida": "Ejecución de Agente",
+        "detalles_error": {
+            "tipo": "CalledProcessError",
+            "mensaje": "Command '['C:\\\\Program Files\\\\Python39\\\\python.exe', 'code_auditor_agent.py', 'C:\\\\Users\\\\tx1f6\\\\OneDrive - SIX\\\\Escritorio\\\\agente_python']' returned non-zero exit status 1.",
+            "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\tx1f6\\OneDrive - SIX\\Escritorio\\agente_python\\orchestrator.py\", line 260, in procesar_repo\n    raise subprocess.CalledProcessError(proc.returncode, comando)\nsubprocess.CalledProcessError: Command '['C:\\\\Program Files\\\\Python39\\\\python.exe', 'code_auditor_agent.py', 'C:\\\\Users\\\\tx1f6\\\\OneDrive - SIX\\\\Escritorio\\\\agente_python']' returned non-zero exit status 1.\n"
+        }
+    }
+]

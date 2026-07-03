@@ -3,10 +3,9 @@ import sys
 import json
 import time
 import subprocess 
-from datetime import datetime
+import argparse
 import warnings
 
-# Silenciar las advertencias de versiones antiguas de Python
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 try:
@@ -14,18 +13,14 @@ try:
     from google.genai import types
     from google.genai.errors import APIError
 except ImportError:
-    print("❌ [Agente] Error: La librería 'google-genai' es requerida.")
-    print("💡 Instálala ejecutando: pip install google-genai")
+    print("❌ [Agente] Error: Requiere 'google-genai'. Corre: pip install google-genai")
     sys.exit(1)
 
 def extraer_codigo_base(target_path):
-    """Escanea recursivamente el directorio para extraer el contenido de los archivos."""
-    extensiones_validas = {
-        '.py', '.js', '.ts', '.jsx', '.tsx', '.html', '.css', 
-        '.java', '.c', '.cpp', '.cs', '.go', '.php', '.rb', 
-        '.sh', '.json', '.yml', '.yaml', '.sql', '.dockerfile', 'Dockerfile'
-    }
+    """Escanea el código fuente puro, descartando formatos visuales y lockfiles pesados."""
+    extensiones_validas = {'.py', '.js', '.ts', '.jsx', '.tsx', '.go', '.java', '.c', '.cpp', '.cs', '.sh', '.sql'}
     directorios_ignorados = {'.git', '__pycache__', 'node_modules', 'venv', '.venv', 'env', 'dist', 'build'}
+    archivos_ignorados = {'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'poetry.lock', 'go.sum', '.gitignore'}
     
     codigo_empaquetado = []
     print(f"   ↳ [Agente]: Extrayendo archivos desde {target_path}...")
@@ -33,139 +28,134 @@ def extraer_codigo_base(target_path):
     for raiz, directorios, archivos in os.walk(target_path):
         directorios[:] = [d for d in directorios if d not in directorios_ignorados]
         for archivo in archivos:
+            if archivo in archivos_ignorados: continue
             _, ext = os.path.splitext(archivo)
-            if ext.lower() in extensiones_validas or archivo in extensiones_validas:
+            if ext.lower() in extensiones_validas:
                 ruta_completa = os.path.join(raiz, archivo)
                 ruta_relativa = os.path.relpath(ruta_completa, target_path)
-                
                 try:
                     with open(ruta_completa, 'r', encoding='utf-8', errors='ignore') as f:
-                        contenido = f.read()
-                    codigo_empaquetado.append({
-                        "archivo": ruta_relativa,
-                        "contenido": contenido
-                    })
+                        codigo_empaquetado.append({"archivo": ruta_relativa, "contenido": f.read()})
                 except Exception as e:
-                    print(f"   ⚠️ [Agente] Error leyendo {ruta_relativa}: {str(e)}")
-                    
+                    print(f"   ⚠️ Error leyendo {ruta_relativa}: {str(e)}")
     return codigo_empaquetado
 
-def analizar_con_gemini_robusto(codigo_proyecto):
-    """Realiza la petición utilizando una lista de modelos como respaldo (Fallback)."""
+def ejecutar_llamada_api(client, modelo, contenido_usuario, config):
+    max_reintentos = 2
+    for intento in range(1, max_reintentos + 1):
+        try:
+            respuesta = client.models.generate_content(model=modelo, contents=contenido_usuario, config=config)
+            return json.loads(respuesta.text)
+        except APIError as e:
+            msg = str(e.message) if hasattr(e, 'message') else str(e)
+            if intento < max_reintentos:
+                espera = 45 if "quota" in msg.lower() else 5
+                print(f"      ⏳ Cuota saturada. Esperando {espera}s...")
+                time.sleep(espera)
+    return None
+
+def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        print("❌ [Agente] Error crítico: No se heredó la variable 'GEMINI_API_KEY'.")
-        return None
-        
+    if not api_key: return None
     client = genai.Client(api_key=api_key)
     
+    # 🧠 Nuevo Rol Híbrido: Programador + Auditor Técnico
     prompt_sistema = (
-        "Eres un auditor senior de seguridad de aplicaciones y experto en arquitectura de microservicios. "
-        "Analiza el código provisto y genera un informe técnico detallado. "
-        "DEBES responder EXCLUSIVAMENTE con un objeto JSON válido que siga esta estructura exacta:\n"
+        "Eres un ingeniero de software senior y experto en refactorización de código.\n"
+        "Tu objetivo es procesar un lote de archivos de un repositorio según este criterio:\n"
+        "1. Si el desarrollador HA PROPORCIONADO instrucciones o solicitudes de cambios específicos, "
+        "tu prioridad número uno es aplicar exactamente esa modificación, añadir las funciones, rutas o ítems solicitados "
+        "en los archivos correspondientes.\n"
+        "2. Si el desarrollador NO dejó instrucciones, audita el código buscando vulnerabilidades críticas.\n\n"
+        "Para cualquier archivo modificado o parcheado, proporciona el código COMPLETO actualizado.\n"
+        "DEBES responder EXCLUSIVAMENTE con un JSON con este formato:\n"
         "{\n"
-        "  \"nombre_microservicio\": \"Nombre o inferencia del servicio\",\n"
-        "  \"resumen_arquitectura\": \"Descripción de la arquitectura y tecnologías detectadas\",\n"
+        "  \"nombre_microservicio\": \"Nombre inferred\",\n"
+        "  \"resumen_arquitectura\": \"Breve resumen del bloque\",\n"
         "  \"puntos_criticos_seguridad\": [\n"
-        "    {\"archivo\": \"ruta/al/archivo\", \"severidad\": \"Alta/Media/Baja\", \"vulnerabilidad\": \"Descripción\", \"solucion\": \"Parche recomendado\"}\n"
+        "    {\n"
+        "      \"archivo\": \"ruta/relativa/archivo.py\",\n"
+        "      \"severidad\": \"Alta/Media/Baja\",\n"
+        "      \"vulnerabilidad\": \"Descripción del problema solucionado o cambio hecho\",\n"
+        "      \"solucion\": \"Explicación técnica del cambio de código\",\n"
+        "      \"explicacion_sencilla\": \"Explicación clara y pedagógica en español para un desarrollador principiante indicando qué añadiste o cambiaste y por qué\",\n"
+        "      \"requiere_parche\": true,\n"
+        "      \"codigo_corregido_completo\": \"Contenido íntegro del nuevo archivo listo para guardarse\"\n"
+        "    }\n"
         "  ],\n"
-        "  \"calidad_codigo_score\": 85,\n"
-        "  \"conclusiones_generales\": \"Recomendaciones finales\"\n"
+        "  \"calidad_codigo_score\": 90,\n"
+        "  \"conclusiones_generales\": \"Comentarios\"\n"
         "}"
     )
     
-    config = types.GenerateContentConfig(
-        system_instruction=prompt_sistema,
-        response_mime_type="application/json",
-        temperature=0.2
-    )
-    
-    contenido_usuario = f"Código fuente del repositorio a auditar:\n{json.dumps(codigo_proyecto, ensure_ascii=False)}"
-    
-    modelos_candidatos = [
-        'gemini-2.5-pro',
-        'gemini-2.5-flash',
-        'gemini-2.0-pro-exp',
-        'gemini-2.0-flash',
-        'gemini-1.5-pro',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-8b'
-    ]
-    
-    max_reintentos_por_modelo = 2
+    config = types.GenerateContentConfig(system_instruction=prompt_sistema, response_mime_type="application/json", temperature=0.2)
 
-    for modelo in modelos_candidatos:
-        print(f"\n   ↳ [Agente]: Intentando auditar con el modelo [{modelo}]...")
+    # 🏎️ Velocidad Máxima: Lotes grandes de 15 archivos
+    TAMANIO_LOTE = 15  
+    lotes = [codigo_proyecto[i:i + TAMANIO_LOTE] for i in range(0, len(codigo_proyecto), TAMANIO_LOTE)]
+    total_lotes = len(lotes)
+    
+    print(f"\n   📦 [Modo Veloz]: Proyecto dividido en {total_lotes} lotes de ({TAMANIO_LOTE} archivos máx).")
+    
+    reporte_consolidado = {
+        "nombre_microservicio": os.environ.get("NOMBRE_MICROSERVICIO", "Microservicio"),
+        "resumen_arquitectura": "", "puntos_criticos_seguridad": [], "calidad_codigo_score": 85, "conclusiones_generales": ""
+    }
+    
+    scores = []
+    lotes_ok = 0
+    modelo_activo = 'gemini-2.5-flash'
+
+    for index, lote in enumerate(lotes, 1):
+        print(f"\n   🚀 [Lote {index}/{total_lotes}]: Enviando {len(lote)} archivos a Gemini...")
+        enfoque_usuario = f"\n🎯 CAMBIOS/INSTRUCCIONES SOLICITADAS POR EL DESARROLLADOR:\n{cambios}" if cambios else ""
+        contenido_usuario = f"Archivos del proyecto (Lote {index} de {total_lotes}):\n{json.dumps(lote, ensure_ascii=False)}{enfoque_usuario}"
         
-        for intento in range(1, max_reintentos_por_modelo + 1):
-            try:
-                respuesta = client.models.generate_content(
-                    model=modelo,
-                    contents=contenido_usuario,
-                    config=config
-                )
-                print(f"   ✅ [Agente]: ¡Éxito usando {modelo}!")
-                return json.loads(respuesta.text)
-                
-            except APIError as e:
-                print(f"   ⚠️ [Intento {intento}/{max_reintentos_por_modelo}] Error API con {modelo}: {e.message}")
-                if intento < max_reintentos_por_modelo:
-                    print("   ⏳ Esperando 5 segundos antes de reintentar...")
-                    time.sleep(5)
-            except Exception as e:
-                print(f"   ⚠️ Error inesperado evaluando {modelo}: {str(e)}")
-                break
-                
-        print(f"   ⏭️  [Agente]: El modelo [{modelo}] falló. Pasando al siguiente de la lista...")
+        res = ejecutar_llamada_api(client, modelo_activo, contenido_usuario, config)
+        if res:
+            lotes_ok += 1
+            puntos = res.get("puntos_criticos_seguridad", [])
+            reporte_consolidado["puntos_criticos_seguridad"].extend(puntos)
+            if "calidad_codigo_score" in res: scores.append(float(res["calidad_codigo_score"]))
+        
+        # ⏱️ Cooldown optimizado a 4.5 segundos para acortar tiempos drásticamente
+        if index < total_lotes:
+            print("   ⏳ Esperando 4.5 segundos de enfriamiento dinámico por RPM...")
+            time.sleep(4.5)
 
-    print("\n❌ [Agente]: Fallo total. Todos los modelos han fallado o están saturados.")
+    if lotes_ok > 0:
+        if scores: reporte_consolidado["calidad_codigo_score"] = int(sum(scores) / len(scores))
+        return reporte_consolidado
     return None
 
 def main():
-    if len(sys.argv) < 2:
-        print("❌ [Agente] Error: No se especificó la ruta objetivo por parámetro.")
-        sys.exit(1)
-        
-    target_path = sys.argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("target_path", type=str)
+    parser.add_argument("-c", "--cambios", type=str, default="")
+    args = parser.parse_args()
     
-    if not os.path.isdir(target_path):
-        print(f"❌ [Agente] Error: La ruta '{target_path}' no es un directorio válido.")
-        sys.exit(1)
+    codigo_proyecto = extraer_codigo_base(args.target_path)
+    if not codigo_proyecto: sys.exit(1)
         
-    codigo_proyecto = extraer_codigo_base(target_path)
-    if not codigo_proyecto:
-        print("❌ [Agente] Error: No hay archivos de código legibles en la ruta.")
-        sys.exit(1)
-        
-    print(f"   ↳ [Agente]: {len(codigo_proyecto)} archivos empaquetados para la auditoría.")
-    
-    # 1. Analizar
-    informe_final = analizar_con_gemini_robusto(codigo_proyecto)
+    print(f"   ↳ [Agente]: {len(codigo_proyecto)} archivos útiles listos para procesarse.")
+    informe_final = analizar_con_gemini_robusto(codigo_proyecto, cambios=args.cambios)
     
     if informe_final:
-        # 2. Rescatar variables de entorno inyectadas por el orquestador
-        nombre_microservicio = os.environ.get("NOMBRE_MICROSERVICIO", "microservicio_desconocido")
-        dir_salida_json = os.environ.get("DIR_SALIDA_JSON", ".")
-        
-        # 3. Exportar usando la estructura de carpetas correcta
-        archivo_salida = os.path.join(dir_salida_json, f"{nombre_microservicio}_auditoria.json")
+        nombre_ms = os.environ.get("NOMBRE_MICROSERVICIO", "microservicio_desconocido")
+        dir_salida = os.environ.get("DIR_SALIDA_JSON", ".")
+        archivo_salida = os.path.join(dir_salida, f"{nombre_ms}_auditoria.json")
         
         try:
             with open(archivo_salida, "w", encoding="utf-8") as f:
                 json.dump(informe_final, f, indent=4, ensure_ascii=False)
-            print(f"✅ [Agente]: Reporte exportado exitosamente en -> {archivo_salida}")
+            print(f"✅ [Agente]: Reporte guardado en -> {archivo_salida}")
             
-            # 4. INVOCAR AL SIGUIENTE AGENTE (Reportero)
-            print("🚀 [Agente Auditor]: Transfiriendo ejecución al Agente Reportero...")
-            
-            # Pasamos las mismas variables al reportero
-            entorno_reportero = os.environ.copy()
-            entorno_reportero["ARCHIVO_JSON_ORIGEN"] = archivo_salida
-            
-            subprocess.run([sys.executable, "reporter_agent.py"], env=entorno_reportero, text=True, encoding='utf-8')
-
-        except Exception as e:
-            print(f"❌ [Agente] Error guardando JSON o llamando al reportero: {str(e)}")
+            # Encadenar ejecución con el reportero si existe
+            if os.path.exists("reporter_agent.py"):
+                entorno_reportero = os.environ.copy()
+                entorno_reportero["ARCHIVO_JSON_ORIGEN"] = archivo_salida
+                subprocess.run([sys.executable, "reporter_agent.py"], env=entorno_reportero, text=True, encoding='utf-8')
+        except Exception:
             sys.exit(1)
     else:
         sys.exit(1)
