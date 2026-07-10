@@ -6,8 +6,12 @@ import argparse
 import warnings
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+
+# Importar funciones auxiliares
+from agent_helpers import extraer_codigo_base, agrupar_en_lotes, _cache_es_compatible
 
 # Se incrementa cada vez que cambie la forma del JSON de auditoría (nombres de
 # campos, semántica, etc.). Permite invalidar automáticamente la caché en disco
@@ -54,82 +58,33 @@ class ReporteAuditoria(BaseModel):
 # 🛠️ FUNCIONES PRINCIPALES
 # ==========================================
 
-def extraer_codigo_base(target_path):
-    """Escanea el código fuente usando pathlib, descartando carpetas y archivos basura."""
-    extensiones_validas = {
-        '.py', '.js', '.ts', '.jsx', '.tsx', '.go', '.java', '.c', '.cpp', '.cs', '.sh', '.sql',
-        # Añadidas: muchos microservicios "conectores" (Kafka Connect, etc.) están
-        # en Kotlin/Gradle, o son en gran parte configuración/despliegue sin
-        # código Java/Python tradicional.
-        '.kt', '.kts', '.gradle', '.yml', '.yaml', '.properties', '.groovy', '.scala',
-    }
-    # Ficheros de configuración/infraestructura relevantes que no tienen extensión.
-    archivos_especiales_incluidos = {'Dockerfile', 'Jenkinsfile', 'Makefile'}
-    directorios_ignorados = {
-        '.git', '__pycache__', 'node_modules', 'venv', '.venv', 'env', 'dist', 'build',
-        # Carpetas propias del orquestador: si se audita la carpeta del propio
-        # 'agente_python' (o cualquier carpeta que las contenga anidadas),
-        # NUNCA deben mezclarse con el código del microservicio analizado.
-        # 'microservices' es la más importante: ahí viven los OTROS repos
-        # clonados en ejecuciones anteriores, y sin esta exclusión sus
-        # archivos se cuelan en la auditoría del repo que los contiene.
-        'microservices', 'json_output', 'logs', 'html_output', 'parches_propuestos',
-    }
-    archivos_ignorados = {'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'poetry.lock', 'go.sum', '.gitignore'}
-    
-    codigo_empaquetado = []
-    ruta_base = Path(target_path)
-    
-    print(f"   ↳ [Agente]: Extrayendo archivos desde {ruta_base.resolve()}...")
-
-    for archivo in ruta_base.rglob("*"):
-        # 🛡️ IMPORTANTE: comprobamos las carpetas ignoradas sobre la ruta
-        # RELATIVA al repo (dentro de él), nunca sobre la ruta absoluta.
-        # La carpeta de trabajo real suele ser algo como
-        # '.../agente_python/microservices/<repo>/...', así que si
-        # comparásemos con la ruta absoluta, 'microservices' aparecería
-        # siempre como ancestro y excluiría el repo COMPLETO sin mirar su
-        # contenido real. Esto fue justo el bug que rompió el escaneo.
-        ruta_relativa_partes = archivo.relative_to(ruta_base).parts
-        if any(part in directorios_ignorados for part in ruta_relativa_partes):
-            continue
-
-        if not archivo.is_file() or archivo.name in archivos_ignorados:
-            continue
-
-        es_extension_valida = archivo.suffix.lower() in extensiones_validas
-        es_archivo_especial = archivo.name in archivos_especiales_incluidos
-
-        if es_extension_valida or es_archivo_especial:
-            try:
-                contenido = archivo.read_text(encoding='utf-8', errors='ignore')
-                ruta_relativa = archivo.relative_to(ruta_base).as_posix() 
-                codigo_empaquetado.append({"archivo": ruta_relativa, "contenido": contenido})
-            except Exception as e:
-                print(f"   ⚠️ Error leyendo {archivo.name}: {str(e)}")
-                
-    return codigo_empaquetado
-
-def agrupar_en_lotes(codigo_proyecto, max_chars=80000):
-    """Agrupa archivos en lotes basándose en el límite de caracteres (~20k tokens por lote)."""
-    lotes = []
-    lote_actual = []
-    chars_actuales = 0
-    
-    for arch in codigo_proyecto:
-        tamaño = len(arch['contenido'])
-        if chars_actuales + tamaño > max_chars and lote_actual:
-            lotes.append(lote_actual)
-            lote_actual = []
-            chars_actuales = 0
-        
-        lote_actual.append(arch)
-        chars_actuales += tamaño
-        
-    if lote_actual:
-        lotes.append(lote_actual)
-        
-    return lotes
+def _get_system_prompt(cambios: Optional[str]) -> str:
+    """Genera el prompt del sistema basado en si se solicitan cambios o una auditoría."""
+    if cambios:
+        # MODO DESARROLLADOR: El usuario pidió algo (Opción 2 del menú)
+        return (
+            "Eres un ingeniero de software senior.\n"
+            "Tu ÚNICA tarea es aplicar la modificación o refactor que pide el usuario.\n"
+            "NO hagas auditorías de seguridad ni busques vulnerabilidades.\n"
+            "Para rellenar el JSON de salida usa esta guía exacta:\n"
+            "- 'severidad': Usa siempre 'INFO'.\n"
+            "- 'vulnerabilidad': Escribe un título corto del cambio (ej. 'Eliminación de comentarios', 'Creación de README').\n"
+            "- 'solucion': Describe brevemente qué hiciste.\n"
+            "- 'explicacion_sencilla': Escribe 'Se aplicó el cambio solicitado por el usuario'.\n"
+            "- 'requiere_parche': Ponlo en true.\n"
+            "IMPORTANTE: En 'codigo_corregido_completo' devuelve el ARCHIVO COMPLETO (todo el fichero modificado o creado), "
+            "listo para sobrescribir o crear directamente. No incluyas backticks de markdown."
+        )
+    else:
+        # MODO AUDITOR: Búsqueda de bugs (Opción 1 del menú)
+        return (
+            "Eres un ingeniero de software senior y auditor técnico.\n"
+            "Analiza el código buscando EXCLUSIVAMENTE bugs críticos, vulnerabilidades de seguridad y problemas graves de arquitectura.\n"
+            "NO reportes problemas de estilo, formato o comentarios (a menos que filtren credenciales).\n"
+            "Si encuentras un problema grave, clasifica su severidad (Alta, Media, Baja) y explica el fallo en los campos correspondientes.\n"
+            "Si sabes cómo solucionarlo de forma segura, pon 'requiere_parche' en true y en 'codigo_corregido_completo' "
+            "devuelve el ARCHIVO COMPLETO ya corregido (sin backticks de markdown)."
+        )
 
 def procesar_lote_concurrente(client, modelo, lote, index, total_lotes, config, cambios):
     """Función de trabajador que procesa el lote llamando a la API inmediatamente."""
@@ -169,32 +124,7 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     client = genai.Client(api_key=api_key)
     modelo_activo = 'gemini-2.5-flash'
     
-    # 🚀 BIFURCACIÓN DE PROMPTS SEGÚN EL FLUJO DEL ORQUESTADOR
-    if cambios:
-        # MODO DESARROLLADOR: El usuario pidió algo (Opción 2 del menú)
-        prompt_sistema = (
-            "Eres un ingeniero de software senior.\n"
-            "Tu ÚNICA tarea es aplicar la modificación o refactor que pide el usuario.\n"
-            "NO hagas auditorías de seguridad ni busques vulnerabilidades.\n"
-            "Para rellenar el JSON de salida usa esta guía exacta:\n"
-            "- 'severidad': Usa siempre 'INFO'.\n"
-            "- 'vulnerabilidad': Escribe un título corto del cambio (ej. 'Eliminación de comentarios', 'Creación de README').\n"
-            "- 'solucion': Describe brevemente qué hiciste.\n"
-            "- 'explicacion_sencilla': Escribe 'Se aplicó el cambio solicitado por el usuario'.\n"
-            "- 'requiere_parche': Ponlo en true.\n"
-            "IMPORTANTE: En 'codigo_corregido_completo' devuelve el ARCHIVO COMPLETO (todo el fichero modificado o creado), "
-            "listo para sobrescribir o crear directamente. No incluyas backticks de markdown."
-        )
-    else:
-        # MODO AUDITOR: Búsqueda de bugs (Opción 1 del menú)
-        prompt_sistema = (
-            "Eres un ingeniero de software senior y auditor técnico.\n"
-            "Analiza el código buscando EXCLUSIVAMENTE bugs críticos, vulnerabilidades de seguridad y problemas graves de arquitectura.\n"
-            "NO reportes problemas de estilo, formato o comentarios (a menos que filtren credenciales).\n"
-            "Si encuentras un problema grave, clasifica su severidad (Alta, Media, Baja) y explica el fallo en los campos correspondientes.\n"
-            "Si sabes cómo solucionarlo de forma segura, pon 'requiere_parche' en true y en 'codigo_corregido_completo' "
-            "devuelve el ARCHIVO COMPLETO ya corregido (sin backticks de markdown)."
-        )
+    prompt_sistema = _get_system_prompt(cambios)
     
     config = types.GenerateContentConfig(
         system_instruction=prompt_sistema, 
@@ -249,16 +179,16 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
         return reporte_consolidado
     return None
 
-def _cache_es_compatible(archivo_salida: Path) -> bool:
-    """Valida que el JSON en caché fue generado con la versión de esquema actual."""
+def _save_final_report(informe_final: dict, archivo_salida: Path) -> None:
+    """Guarda el informe final en un archivo JSON."""
     try:
-        with open(archivo_salida, "r", encoding="utf-8") as f:
-            datos = json.load(f)
-    except Exception:
-        return False  # JSON corrupto o ilegible -> mejor regenerar
-
-    return datos.get("esquema_version") == ESQUEMA_VERSION
-
+        with open(archivo_salida, "w", encoding="utf-8") as f:
+            json.dump(informe_final, f, indent=4, ensure_ascii=False)
+        print(f"✅ [Agente]: Nuevo reporte guardado en -> {archivo_salida}")
+        print(f"   ↳ La selección/aplicación de cambios la gestiona el orquestador (orchestrator.py).")
+    except Exception as e:
+        print(f"❌ Error guardando el JSON: {e}")
+        sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -273,7 +203,7 @@ def main():
     archivo_salida = dir_salida / f"{nombre_ms}_auditoria.json"
     
     # 2. 🛡️ SISTEMA DE CACHÉ / AHORRO DE TOKENS
-    cache_valida = archivo_salida.exists() and _cache_es_compatible(archivo_salida)
+    cache_valida = archivo_salida.exists() and _cache_es_compatible(archivo_salida, ESQUEMA_VERSION)
     if archivo_salida.exists() and not cache_valida:
         print(f"   ↳ [Agente]: Auditoría previa de '{nombre_ms}' es de un formato antiguo (incompatible). Se regenerará.")
 
@@ -300,22 +230,14 @@ def main():
             "calidad_codigo_score": 0,
             "conclusiones_generales": "Repositorio sin código analizable (posible repo de solo configuración/infraestructura).",
         }
-        with open(archivo_salida, "w", encoding="utf-8") as f:
-            json.dump(informe_vacio, f, indent=4, ensure_ascii=False)
+        _save_final_report(informe_vacio, archivo_salida)
         sys.exit(0)
         
     print(f"   ↳ [Agente]: {len(codigo_proyecto)} archivos útiles listos para procesarse.")
     informe_final = analizar_con_gemini_robusto(codigo_proyecto, cambios=args.cambios)
     
     if informe_final:
-        try:
-            with open(archivo_salida, "w", encoding="utf-8") as f:
-                json.dump(informe_final, f, indent=4, ensure_ascii=False)
-            print(f"✅ [Agente]: Nuevo reporte guardado en -> {archivo_salida}")
-            print(f"   ↳ La selección/aplicación de cambios la gestiona el orquestador (orchestrator.py).")
-        except Exception as e:
-            print(f"❌ Error guardando el JSON: {e}")
-            sys.exit(1)
+        _save_final_report(informe_final, archivo_salida)
     else:
         print("❌ [Agente] No se pudo generar ningún reporte válido.")
         sys.exit(1)
