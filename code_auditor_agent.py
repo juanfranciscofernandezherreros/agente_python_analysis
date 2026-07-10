@@ -2,13 +2,17 @@ import os
 import sys
 import json
 import time
-import subprocess 
 import argparse
 import warnings
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+
+# Se incrementa cada vez que cambie la forma del JSON de auditoría (nombres de
+# campos, semántica, etc.). Permite invalidar automáticamente la caché en disco
+# cuando un informe antiguo ya no es compatible con el código actual.
+ESQUEMA_VERSION = 2
 
 try:
     from google import genai
@@ -29,7 +33,14 @@ class PuntoCritico(BaseModel):
     solucion: str
     explicacion_sencilla: str
     requiere_parche: bool
-    parche_diff: str = Field(description="Proporciona SOLO el diff o las líneas exactas a cambiar. NO envíes el código completo.")
+    codigo_corregido_completo: str = Field(
+        default="",
+        description=(
+            "Si requiere_parche es true, contenido ÍNTEGRO del archivo ya corregido, "
+            "listo para sobrescribir el fichero original tal cual (sin markdown, sin backticks). "
+            "Si requiere_parche es false, deja este campo vacío."
+        )
+    )
 
 class ReporteAuditoria(BaseModel):
     nombre_microservicio: str
@@ -44,8 +55,25 @@ class ReporteAuditoria(BaseModel):
 
 def extraer_codigo_base(target_path):
     """Escanea el código fuente usando pathlib, descartando carpetas y archivos basura."""
-    extensiones_validas = {'.py', '.js', '.ts', '.jsx', '.tsx', '.go', '.java', '.c', '.cpp', '.cs', '.sh', '.sql'}
-    directorios_ignorados = {'.git', '__pycache__', 'node_modules', 'venv', '.venv', 'env', 'dist', 'build'}
+    extensiones_validas = {
+        '.py', '.js', '.ts', '.jsx', '.tsx', '.go', '.java', '.c', '.cpp', '.cs', '.sh', '.sql',
+        # Añadidas: muchos microservicios "conectores" (Kafka Connect, etc.) están
+        # en Kotlin/Gradle, o son en gran parte configuración/despliegue sin
+        # código Java/Python tradicional.
+        '.kt', '.kts', '.gradle', '.yml', '.yaml', '.properties', '.groovy', '.scala',
+    }
+    # Ficheros de configuración/infraestructura relevantes que no tienen extensión.
+    archivos_especiales_incluidos = {'Dockerfile', 'Jenkinsfile', 'Makefile'}
+    directorios_ignorados = {
+        '.git', '__pycache__', 'node_modules', 'venv', '.venv', 'env', 'dist', 'build',
+        # Carpetas propias del orquestador: si se audita la carpeta del propio
+        # 'agente_python' (o cualquier carpeta que las contenga anidadas),
+        # NUNCA deben mezclarse con el código del microservicio analizado.
+        # 'microservices' es la más importante: ahí viven los OTROS repos
+        # clonados en ejecuciones anteriores, y sin esta exclusión sus
+        # archivos se cuelan en la auditoría del repo que los contiene.
+        'microservices', 'json_output', 'logs', 'html_output', 'parches_propuestos',
+    }
     archivos_ignorados = {'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'poetry.lock', 'go.sum', '.gitignore'}
     
     codigo_empaquetado = []
@@ -54,10 +82,24 @@ def extraer_codigo_base(target_path):
     print(f"   ↳ [Agente]: Extrayendo archivos desde {ruta_base.resolve()}...")
 
     for archivo in ruta_base.rglob("*"):
-        if any(part in directorios_ignorados for part in archivo.parts):
+        # 🛡️ IMPORTANTE: comprobamos las carpetas ignoradas sobre la ruta
+        # RELATIVA al repo (dentro de él), nunca sobre la ruta absoluta.
+        # La carpeta de trabajo real suele ser algo como
+        # '.../agente_python/microservices/<repo>/...', así que si
+        # comparásemos con la ruta absoluta, 'microservices' aparecería
+        # siempre como ancestro y excluiría el repo COMPLETO sin mirar su
+        # contenido real. Esto fue justo el bug que rompió el escaneo.
+        ruta_relativa_partes = archivo.relative_to(ruta_base).parts
+        if any(part in directorios_ignorados for part in ruta_relativa_partes):
             continue
-            
-        if archivo.is_file() and archivo.name not in archivos_ignorados and archivo.suffix.lower() in extensiones_validas:
+
+        if not archivo.is_file() or archivo.name in archivos_ignorados:
+            continue
+
+        es_extension_valida = archivo.suffix.lower() in extensiones_validas
+        es_archivo_especial = archivo.name in archivos_especiales_incluidos
+
+        if es_extension_valida or es_archivo_especial:
             try:
                 contenido = archivo.read_text(encoding='utf-8', errors='ignore')
                 ruta_relativa = archivo.relative_to(ruta_base).as_posix() 
@@ -130,7 +172,9 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
         "Eres un ingeniero de software senior y auditor técnico.\n"
         "1. Si el desarrollador solicita cambios, aplica esa modificación exacta en los archivos correspondientes.\n"
         "2. Si no hay instrucciones, busca bugs y vulnerabilidades críticas.\n"
-        "IMPORTANTE: NO devuelvas archivos completos. Devuelve SOLO el DIFF o las líneas exactas que deben modificarse."
+        "IMPORTANTE: Cuando 'requiere_parche' sea true, en 'codigo_corregido_completo' devuelve el ARCHIVO "
+        "COMPLETO ya corregido (todo el fichero, no un fragmento ni un diff), listo para sobrescribir el "
+        "original directamente. No incluyas backticks de markdown ni explicaciones dentro de ese campo."
     )
     
     config = types.GenerateContentConfig(
@@ -146,6 +190,7 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     print(f"\n   📦 Proyecto dividido dinámicamente en {total_lotes} lotes por límite de contexto.")
     
     reporte_consolidado = {
+        "esquema_version": ESQUEMA_VERSION,
         "nombre_microservicio": os.environ.get("NOMBRE_MICROSERVICIO", "Microservicio"),
         "resumen_arquitectura": "Análisis combinado de múltiples componentes.", 
         "puntos_criticos_seguridad": [], 
@@ -188,6 +233,23 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
         return reporte_consolidado
     return None
 
+def _cache_es_compatible(archivo_salida: Path) -> bool:
+    """Valida que el JSON en caché fue generado con la versión de esquema actual.
+
+    Evita que informes generados con una versión anterior del agente (con un
+    formato de campos distinto, p.ej. 'parche_diff' en vez de
+    'codigo_corregido_completo') se sirvan como válidos y el orquestador no
+    encuentre nada aplicable en silencio, sin que quede claro por qué.
+    """
+    try:
+        with open(archivo_salida, "r", encoding="utf-8") as f:
+            datos = json.load(f)
+    except Exception:
+        return False  # JSON corrupto o ilegible -> mejor regenerar
+
+    return datos.get("esquema_version") == ESQUEMA_VERSION
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("target_path", type=str)
@@ -201,25 +263,37 @@ def main():
     archivo_salida = dir_salida / f"{nombre_ms}_auditoria.json"
     
     # 2. 🛡️ SISTEMA DE CACHÉ / AHORRO DE TOKENS
-    # Si la auditoría ya existe y el usuario NO pidió cambios nuevos, evitamos la llamada a Gemini.
-    if archivo_salida.exists() and not args.cambios.strip():
+    # Si la auditoría ya existe, es del esquema actual y el usuario NO pidió cambios nuevos, evitamos la llamada a Gemini.
+    cache_valida = archivo_salida.exists() and _cache_es_compatible(archivo_salida)
+    if archivo_salida.exists() and not cache_valida:
+        print(f"   ↳ [Agente]: Auditoría previa de '{nombre_ms}' es de un formato antiguo (incompatible). Se regenerará.")
+
+    if cache_valida and not args.cambios.strip():
         print(f"\n⏩ [Agente]: Auditoría previa encontrada para '{nombre_ms}'.")
         print(f"   ↳ Se saltará el análisis de la API para ahorrar tokens.")
-        
-        # Saltamos directo al reportero
-        if Path("reporter_agent.py").exists():
-            entorno_reportero = os.environ.copy()
-            entorno_reportero["ARCHIVO_JSON_ORIGEN"] = str(archivo_salida)
-            subprocess.run([sys.executable, "reporter_agent.py"], env=entorno_reportero, text=True, encoding='utf-8')
+        print(f"   ↳ La selección/aplicación de cambios la gestiona el orquestador (orchestrator.py).")
         sys.exit(0) # Salida exitosa sin gastar cuota
         
     # 3. Si no hay caché o se pidieron modificaciones, procedemos con el análisis pesado
     print(f"\n🔍 [Agente]: Iniciando nueva auditoría/modificación para '{nombre_ms}'...")
     codigo_proyecto = extraer_codigo_base(args.target_path)
     
-    if not codigo_proyecto: 
-        print("❌ [Agente] No se encontró código válido para analizar.")
-        sys.exit(1)
+    if not codigo_proyecto:
+        print(f"\n✨ [Agente]: No se encontró código analizable en '{nombre_ms}' con las extensiones soportadas.")
+        print("   ↳ Esto es habitual en repos que son solo configuración/infraestructura")
+        print("     (manifiestos, Helm charts, YAML de despliegue, etc.) sin código fuente propio.")
+        print("   ↳ No se considera un fallo: se guarda un informe vacío y se continúa.")
+        informe_vacio = {
+            "esquema_version": ESQUEMA_VERSION,
+            "nombre_microservicio": nombre_ms,
+            "resumen_arquitectura": "No se encontró código fuente con las extensiones soportadas actualmente.",
+            "puntos_criticos_seguridad": [],
+            "calidad_codigo_score": 0,
+            "conclusiones_generales": "Repositorio sin código analizable (posible repo de solo configuración/infraestructura).",
+        }
+        with open(archivo_salida, "w", encoding="utf-8") as f:
+            json.dump(informe_vacio, f, indent=4, ensure_ascii=False)
+        sys.exit(0)
         
     print(f"   ↳ [Agente]: {len(codigo_proyecto)} archivos útiles listos para procesarse.")
     informe_final = analizar_con_gemini_robusto(codigo_proyecto, cambios=args.cambios)
@@ -229,11 +303,7 @@ def main():
             with open(archivo_salida, "w", encoding="utf-8") as f:
                 json.dump(informe_final, f, indent=4, ensure_ascii=False)
             print(f"✅ [Agente]: Nuevo reporte guardado en -> {archivo_salida}")
-            
-            if Path("reporter_agent.py").exists():
-                entorno_reportero = os.environ.copy()
-                entorno_reportero["ARCHIVO_JSON_ORIGEN"] = str(archivo_salida)
-                subprocess.run([sys.executable, "reporter_agent.py"], env=entorno_reportero, text=True, encoding='utf-8')
+            print(f"   ↳ La selección/aplicación de cambios la gestiona el orquestador (orchestrator.py).")
         except Exception as e:
             print(f"❌ Error guardando el JSON: {e}")
             sys.exit(1)

@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+import re
 import shutil
 import json
 import traceback
@@ -196,6 +197,27 @@ def seleccionar_con_tkinter() -> Optional[str]:
         return None
 
 
+def _parece_url_git(texto: str) -> bool:
+    """Detecta si lo que escribió el usuario ya es directamente una URL de Git,
+    para poder saltarnos el paso de elegir la opción '2' del menú."""
+    texto = texto.strip()
+    if not texto:
+        return False
+    return texto.startswith(("http://", "https://", "git@")) or texto.endswith(".git")
+
+
+def _parece_ruta_local(texto: str) -> bool:
+    """Detecta si lo que escribió el usuario ya es directamente una ruta de
+    carpeta local (Windows o Unix), para saltarnos el selector Tkinter."""
+    texto = texto.strip()
+    if not texto:
+        return False
+    if os.path.isdir(texto):
+        return True
+    # C:\..., C:/... (Windows) o /..., ~/..., ./... (Unix)
+    return bool(re.match(r'^[a-zA-Z]:[\\/]', texto)) or texto.startswith(("/", "~/", "./"))
+
+
 def obtener_repositorios_interactivo() -> Optional[Tuple[List[str], Optional[str]]]:
     while True:
         print("\n----------------------------------------------------")
@@ -204,6 +226,7 @@ def obtener_repositorios_interactivo() -> Optional[Tuple[List[str], Optional[str
         print("1. Analizar una carpeta local (Abre ventana Tkinter) 📂")
         print("2. Analizar un repositorio remoto (Git URL) 🌐")
         print("3. Cambiar / Reemplazar la Gemini API Key actual 🔑")
+        print("   (💡 También puedes pegar directamente una URL de Git o una ruta de carpeta)")
 
         opcion = input("\n👉 Elige una opción (1, 2 o 3): ").strip()
 
@@ -213,7 +236,20 @@ def obtener_repositorios_interactivo() -> Optional[Tuple[List[str], Optional[str
 
         ruta_final = None
 
-        if opcion == "1":
+        if _parece_url_git(opcion):
+            print(f"\n🌐 URL de repositorio detectada automáticamente: {opcion}")
+            rama = input("👉 ¿Qué rama deseas clonar? (Enter para la por defecto): ").strip()
+            if rama and rama.startswith("-"):
+                print("❌ Nombre de rama no válido (no puede empezar por '-'). Operación cancelada.")
+                continue
+            print(f"\n✅ Repositorio seleccionado: {opcion}")
+            ruta_final = f"{opcion}#{rama}" if rama else opcion
+
+        elif _parece_ruta_local(opcion):
+            print(f"\n📂 Ruta de carpeta local detectada automáticamente: {opcion}")
+            ruta_final = opcion
+
+        elif opcion == "1":
             ruta = seleccionar_con_tkinter()
             if not ruta:
                 print("⏭️ Cancelaste la selección de carpeta.")
@@ -380,12 +416,41 @@ def gestionar_cambios_git(ruta_repo: str, archivos_modificados: List[str], nombr
 
 # ---- aplicar_mejoras_interactivas: dividido en pasos más pequeños ----
 
+# Orden de severidad para que lo importante aparezca primero, en vez del
+# orden aleatorio en que van terminando los hilos concurrentes del agente.
+_ORDEN_SEVERIDAD = {"critica": 0, "crítica": 0, "alta": 1, "media": 2, "baja": 3}
+
+
+def _clave_orden(propuesta: dict) -> tuple:
+    severidad = (propuesta.get("severidad") or "").strip().lower()
+    return (_ORDEN_SEVERIDAD.get(severidad, 99), propuesta.get("archivo") or "")
+
+
+def _icono_severidad(severidad: str) -> str:
+    s = (severidad or "").strip().lower()
+    if s in ("critica", "crítica", "alta"):
+        return "🔴"
+    if s == "media":
+        return "🟠"
+    return "🟢"
+
+
+def _ordenar_por_severidad_y_archivo(puntos_con_parche: List[dict]) -> List[dict]:
+    """Reordena por severidad (crítica/alta -> media -> baja) y luego por archivo,
+    en vez de dejar el orden aleatorio con el que van terminando los hilos
+    concurrentes del agente. Esta es la lista que se usa tanto para exportar
+    como para aplicar, así que el número que ves y el que aplicas coinciden.
+    """
+    return sorted(puntos_con_parche, key=_clave_orden)
+
+
 def _exportar_cambios_disponibles(nombre_repo: str, puntos_con_parche: List[dict]) -> str:
     resumen_exportacion = []
     for idx, propuesta in enumerate(puntos_con_parche, 1):
         resumen_exportacion.append({
             "id_cambio": idx,
             "archivo": propuesta.get("archivo"),
+            "severidad": propuesta.get("severidad", "N/A"),
             "proposito": propuesta.get('vulnerabilidad') or 'Modificación solicitada',
             "explicacion": propuesta.get('explicacion_sencilla', 'Sin detalles adicionales.')
         })
@@ -398,12 +463,19 @@ def _exportar_cambios_disponibles(nombre_repo: str, puntos_con_parche: List[dict
 
     print("\n====================================================")
     print("🛠️  RESULTADOS DE LA AUDITORÍA: CAMBIOS DISPONIBLES")
+    print("   (ordenados por severidad: 🔴 crítica/alta → 🟠 media → 🟢 baja,")
+    print("    y agrupados por archivo)")
     print("====================================================")
+
+    archivo_anterior = None
     for item in resumen_exportacion:
-        print(f"[{item['id_cambio']}] 📄 Archivo: {item['archivo']}")
-        print(f"    ⚠️  Propósito: {item['proposito']}")
-        print(f"    🎓 Explicación: {item['explicacion']}")
-        print("-" * 50)
+        if item["archivo"] != archivo_anterior:
+            print(f"\n📄 {item['archivo']}")
+            archivo_anterior = item["archivo"]
+        icono = _icono_severidad(item["severidad"])
+        print(f"  [{item['id_cambio']}] {icono} {item['severidad'].upper()} | {item['proposito']}")
+        print(f"       🎓 {item['explicacion']}")
+    print("-" * 50)
 
     return archivo_exportacion
 
@@ -502,6 +574,11 @@ def aplicar_mejoras_interactivas(nombre_repo: str, ruta_base_proyecto: str, repo
         if not puntos_con_parche:
             print(f"\n✨ El asistente no propuso modificaciones de código automáticas para '{nombre_repo}'.")
             return
+
+        # Se ordena UNA vez aquí (severidad -> archivo); el mismo orden se usa
+        # tanto para exportar/mostrar como para aplicar, así el número que ves
+        # en pantalla siempre corresponde al cambio correcto.
+        puntos_con_parche = _ordenar_por_severidad_y_archivo(puntos_con_parche)
 
         _exportar_cambios_disponibles(nombre_repo, puntos_con_parche)
 

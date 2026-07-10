@@ -85,7 +85,7 @@ def main():
             continue
             
         archivo_destino = punto.get("archivo", f"archivo_desconocido_{idx_original}")
-        codigo_parche = punto.get("parche_diff") or punto.get("codigo_corregido_completo")
+        codigo_parche = punto.get("codigo_corregido_completo") or punto.get("parche_diff")
         
         if codigo_parche:
             ruta_original = Path(archivo_destino)

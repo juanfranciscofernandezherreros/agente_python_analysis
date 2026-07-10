@@ -1,0 +1,1 @@
+python generar_springboot.py --group-id com.miempresa --artifact-id mi-servicio --java 21 --dependencias web,data-jpa,validation --output-dir C:/Develop --sin-confirmar
