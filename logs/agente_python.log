@@ -10,3 +10,34 @@
 2026-07-03 10:21:47 [INFO]   File "C:\Program Files\Python39\lib\encodings\cp1252.py", line 19, in encode
 2026-07-03 10:21:47 [INFO]     return codecs.charmap_encode(input,self.errors,encoding_table)[0]
 2026-07-03 10:21:47 [INFO] UnicodeEncodeError: 'charmap' codec can't encode character '\u21b3' in position 3: character maps to <undefined>
+2026-07-10 11:04:25 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
+2026-07-10 11:04:32 [INFO]    ↳ [Agente]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python...
+2026-07-10 11:04:32 [INFO]    ↳ [Agente]: 2 archivos útiles listos para procesarse.
+2026-07-10 11:04:33 [INFO] 
+2026-07-10 11:04:33 [INFO]    📦 [Modo Veloz]: Proyecto dividido en 1 lotes de (15 archivos máx).
+2026-07-10 11:04:33 [INFO] 
+2026-07-10 11:04:33 [INFO]    🚀 [Lote 1/1]: Enviando 2 archivos a Gemini...
+2026-07-10 11:04:33 [INFO]       ⏳ Cuota saturada. Esperando 5s...
+2026-07-10 11:06:23 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
+2026-07-10 11:06:26 [INFO]    ↳ [Agente]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python...
+2026-07-10 11:06:26 [INFO]    ↳ [Agente]: 2 archivos útiles listos para procesarse.
+2026-07-10 11:06:26 [INFO] 
+2026-07-10 11:06:26 [INFO]    📦 [Modo Veloz]: Proyecto dividido en 1 lotes de (15 archivos máx).
+2026-07-10 11:06:26 [INFO] 
+2026-07-10 11:06:26 [INFO]    🚀 [Lote 1/1]: Enviando 2 archivos a Gemini...
+2026-07-10 11:08:03 [INFO] Traceback (most recent call last):
+2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 164, in <module>
+2026-07-10 11:08:03 [INFO]     main()
+2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 141, in main
+2026-07-10 11:08:03 [INFO]     informe_final = analizar_con_gemini_robusto(codigo_proyecto, cambios=args.cambios)
+2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 114, in analizar_con_gemini_robusto
+2026-07-10 11:08:03 [INFO]     res = ejecutar_llamada_api(client, modelo_activo, contenido_usuario, config)
+2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 48, in ejecutar_llamada_api
+2026-07-10 11:08:03 [INFO]     return json.loads(respuesta.text)
+2026-07-10 11:08:03 [INFO]   File "C:\Program Files\Python39\lib\json\__init__.py", line 346, in loads
+2026-07-10 11:08:03 [INFO]     return _default_decoder.decode(s)
+2026-07-10 11:08:03 [INFO]   File "C:\Program Files\Python39\lib\json\decoder.py", line 337, in decode
+2026-07-10 11:08:03 [INFO]     obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+2026-07-10 11:08:03 [INFO]   File "C:\Program Files\Python39\lib\json\decoder.py", line 353, in raw_decode
+2026-07-10 11:08:03 [INFO]     obj, end = self.scan_once(s, idx)
+2026-07-10 11:08:03 [INFO] json.decoder.JSONDecodeError: Invalid \escape: line 12 column 6494 (char 8494)

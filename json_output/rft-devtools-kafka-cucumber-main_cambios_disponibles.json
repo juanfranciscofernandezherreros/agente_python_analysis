@@ -1,0 +1,38 @@
+[
+    {
+        "id_cambio": 1,
+        "archivo": "source\\src\\main\\java\\com\\sixgroup\\refit\\devkafka\\LibraryAutoConfiguration.java",
+        "proposito": "Configuración de SSL/TLS insegura por defecto y falta de inyección de dependencias para propiedades de configuración.",
+        "explicacion": "Antes, el sistema podía usar configuraciones de seguridad de red débiles sin preguntar. Ahora, hemos hecho que el sistema pregunte explícitamente si quieres usar una configuración de seguridad de red más débil (solo para desarrollo o pruebas). Si no lo pides, usará la configuración segura por defecto. También hemos mejorado cómo se conectan las diferentes partes del programa para que sea más fácil de mantener y configurar."
+    },
+    {
+        "id_cambio": 2,
+        "archivo": "source\\src\\main\\java\\com\\sixgroup\\refit\\devkafka\\SchemaRegistryClientService.java",
+        "proposito": "Desactivación incondicional de la verificación SSL/TLS y uso de un interceptor de cabeceras con información sensible/innecesaria.",
+        "explicacion": "Antes, este servicio no verificaba la seguridad de las conexiones web, lo que es como hablar con alguien sin pedirle su identificación. Ahora, la seguridad de la conexión se configura desde un lugar central, y solo se desactiva si tú lo pides explícitamente para pruebas. También hemos quitado un 'espía' que añadía información innecesaria a tus peticiones y hemos añadido la opción de enviar un usuario y contraseña de forma segura para acceder a servicios protegidos."
+    },
+    {
+        "id_cambio": 3,
+        "archivo": "source\\src\\main\\java\\com\\sixgroup\\refit\\devkafka\\KafkaRestProxyClientService.java",
+        "proposito": "Desactivación incondicional de la verificación SSL/TLS para `HttpClient`.",
+        "explicacion": "Similar al punto anterior, este servicio también podía conectarse de forma insegura sin preguntar. Ahora, hemos hecho que la conexión sea segura por defecto y solo se desactive la verificación SSL si tú lo pides explícitamente para pruebas, con una advertencia clara. Esto significa que tus comunicaciones están más protegidas a menos que decidas lo contrario para entornos de desarrollo."
+    },
+    {
+        "id_cambio": 4,
+        "archivo": "source\\src\\main\\java\\com\\sixgroup\\refit\\devkafka\\SchemaDownload.java",
+        "proposito": "Desactivación incondicional de la verificación SSL/TLS para `HttpClient` y posible vulnerabilidad de Path Traversal al leer archivos.",
+        "explicacion": "Este servicio, que envía mensajes, también podía conectarse de forma insegura. Ahora, la seguridad de la conexión es segura por defecto y solo se desactiva si tú lo pides explícitamente para pruebas, con una advertencia clara. Además, hemos mejorado la forma en que el programa lee archivos para evitar que un atacante pueda acceder a archivos que no debería. Ahora, el programa verifica que el archivo que intentas leer esté en un lugar seguro y te avisa si no lo está."
+    },
+    {
+        "id_cambio": 5,
+        "archivo": "source\\src\\test\\java\\com\\sixgroup\\refit\\devkafka\\SchemaDownloadTest.java",
+        "proposito": "Mejora de la precisión en la configuración de mocks de Mockito para los nombres de los sujetos del esquema.",
+        "explicacion": "Cambiamos cómo le decimos a Mockito qué llamadas debe simular. Antes, éramos un poco generales (decíamos 'si el nombre contiene -key'). Ahora, somos muy específicos (decimos 'si el nombre es exactamente test-topic-key'). Esto hace que nuestras pruebas sean más precisas y menos propensas a fallar por errores sutiles, asegurando que estamos probando exactamente lo que queremos."
+    },
+    {
+        "id_cambio": 6,
+        "archivo": "source\\src\\test\\java\\com\\sixgroup\\refit\\devkafka\\SchemaRegistryClientServiceTest.java",
+        "proposito": "Uso de reflexión para acceder y manipular el campo privado `restTemplate` de la clase `SchemaRegistryClientService` para propósitos de prueba. Esto es una señal de un problema de diseño en la clase bajo prueba, que no está diseñada para ser fácilmente testeable mediante inyección de dependencias.",
+        "explicacion": "Actualmente, para probar la clase `SchemaRegistryClientService`, el test necesita 'forzar' el acceso a una parte interna y privada de esa clase (el `RestTemplate`) usando una técnica llamada 'reflexión'. Esto es como abrir una cerradura con una ganzúa en lugar de con la llave. Aunque funciona, hace que la prueba sea frágil y difícil de mantener. Si la clase `SchemaRegistryClientService` cambiara su funcionamiento interno, la prueba podría romperse fácilmente. La mejor solución es modificar `SchemaRegistryClientService` para que el `RestTemplate` pueda ser 'entregado' a la clase cuando se crea (inyección de dependencias), haciendo que las pruebas sean mucho más sencillas y robustas. Mientras tanto, hemos quitado una comprobación de 'User-Agent' que no era esencial y hacía el test menos flexible."
+    }
+]

@@ -1,0 +1,8 @@
+2026-07-03 16:00:54 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: rft-devtools-kafka-cucumber-test ---
+2026-07-03 16:00:55 [INFO]    ↳ [Agente]: Extrayendo archivos desde C:\Develop\rft-devtools-kafka-cucumber-test...
+2026-07-03 16:00:55 [INFO]    ↳ [Agente]: 3 archivos útiles listos para procesarse.
+2026-07-03 16:00:56 [INFO] 
+2026-07-03 16:00:56 [INFO]    📦 [Modo Veloz]: Proyecto dividido en 1 lotes de (15 archivos máx).
+2026-07-03 16:00:56 [INFO] 
+2026-07-03 16:00:56 [INFO]    🚀 [Lote 1/1]: Enviando 3 archivos a Gemini...
+2026-07-03 16:02:28 [INFO] ✅ [Agente]: Reporte guardado en -> C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\json_output\rft-devtools-kafka-cucumber-test_auditoria.json

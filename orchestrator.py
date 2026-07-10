@@ -4,9 +4,8 @@ import os
 import shutil
 import json
 import traceback
-import platform
 import logging
-import ast  # Utilizado para el Escudo Anti-Bugs (Validación de sintaxis)
+import ast
 from datetime import datetime
 import warnings
 import argparse
@@ -19,7 +18,7 @@ DIR_LOGS = "logs"
 DIR_JSON = "json_output"
 DIR_HTML = "html_output"
 DIR_MICROSERVICES = "microservices"
-ARCHIVO_KEY_LOCAL = ".gemini_key"
+ARCHIVO_ENV = ".env"
 
 def preparar_entorno():
     """Crea los directorios de salida y contenedor si no existen, y limpia la pantalla."""
@@ -69,31 +68,69 @@ def registrar_fallo_json(nombre_repo, repo_url_o_ruta, etapa, excepcion):
     except Exception as e:
         logging.error(f"Fallo crítico al escribir en el JSON: {e}", exc_info=True)
 
+def leer_key_de_env():
+    """Busca y devuelve la GEMINI_API_KEY dentro del archivo .env."""
+    if not os.path.exists(ARCHIVO_ENV):
+        return None
+    try:
+        with open(ARCHIVO_ENV, "r", encoding="utf-8") as f:
+            for linea in f:
+                if linea.strip().startswith("GEMINI_API_KEY="):
+                    return linea.strip().split("=", 1)[1]
+    except Exception as e:
+        logging.error(f"Error leyendo el archivo .env: {e}")
+    return None
+
+def guardar_key_en_env(key):
+    """Guarda o actualiza la GEMINI_API_KEY en el archivo .env sin borrar otras variables."""
+    lineas = []
+    key_actualizada = False
+    
+    if os.path.exists(ARCHIVO_ENV):
+        with open(ARCHIVO_ENV, "r", encoding="utf-8") as f:
+            lineas = f.readlines()
+            
+    with open(ARCHIVO_ENV, "w", encoding="utf-8") as f:
+        for linea in lineas:
+            if linea.strip().startswith("GEMINI_API_KEY="):
+                f.write(f"GEMINI_API_KEY={key}\n")
+                key_actualizada = True
+            else:
+                f.write(linea)
+        
+        if not key_actualizada:
+            f.write(f"GEMINI_API_KEY={key}\n")
+
 def forzar_configuracion_api_key(cli_key=None, cambiar_key=False):
     if "GOOGLE_API_KEY" in os.environ:
         del os.environ["GOOGLE_API_KEY"]
-    if cambiar_key and os.path.exists(ARCHIVO_KEY_LOCAL):
-        try: os.remove(ARCHIVO_KEY_LOCAL)
-        except: pass
+        
     if cli_key:
         os.environ["GEMINI_API_KEY"] = cli_key
         return
-    if os.path.exists(ARCHIVO_KEY_LOCAL):
-        with open(ARCHIVO_KEY_LOCAL, "r", encoding="utf-8") as f:
-            key_guardada = f.read().strip()
-            if key_guardada:
-                os.environ["GEMINI_API_KEY"] = key_guardada
-                return
-    print("🔑 CONFIGURACIÓN DE CREDENCIAL GOOGLE GEMINI")
+
+    if not cambiar_key:
+        key_guardada = leer_key_de_env()
+        if key_guardada:
+            os.environ["GEMINI_API_KEY"] = key_guardada
+            return
+
+    print("\n🔑 CONFIGURACIÓN DE CREDENCIAL GOOGLE GEMINI")
     key = input("👉 Introduce tu Gemini API Key: ").strip()
-    os.environ["GEMINI_API_KEY"] = key
+    
+    if key:
+        os.environ["GEMINI_API_KEY"] = key
+        guardar_key_en_env(key)
+        print("✅ API Key guardada permanentemente en el archivo .env")
+    else:
+        print("⚠️ No se introdujo ninguna Key. El programa podría fallar si la IA es requerida.")
 
 def seleccionar_con_tkinter():
     """Abre un diálogo visual para seleccionar la carpeta, forzando que aparezca al frente."""
     try:
         root = tk.Tk()
-        root.withdraw() # Oculta la ventana principal
-        root.attributes('-topmost', True) # Fuerza que esté siempre arriba
+        root.withdraw()
+        root.attributes('-topmost', True)
         root.lift()
         root.focus_force()
         
@@ -124,7 +161,6 @@ def obtener_repositorios_interactivo():
             
         ruta_final = None
         
-        # --- PASO 1: OBTENER LA RUTA ---
         if opcion == "1":
             ruta = seleccionar_con_tkinter()
             if not ruta:
@@ -146,7 +182,6 @@ def obtener_repositorios_interactivo():
             print("❌ Opción no válida. Inténtalo de nuevo.")
             continue
 
-        # --- PASO 2: MOSTRAR EL SUBMENÚ PARA LA RUTA SELECCIONADA ---
         if ruta_final:
             while True:
                 print("\n----------------------------------------------------")
@@ -165,7 +200,7 @@ def obtener_repositorios_interactivo():
                     return [ruta_final], cambios if cambios else None
                 elif sub_opcion == "3":
                     print("🔙 Volviendo al menú principal...")
-                    break  # Rompe el bucle del submenú y vuelve al menú principal
+                    break
                 else:
                     print("❌ Opción no válida. Inténtalo de nuevo.")
 
@@ -181,8 +216,53 @@ def validar_sintaxis_python(codigo_texto, nombre_archivo):
             return False
     return True
 
+def gestionar_cambios_git(ruta_repo, archivos_modificados):
+    """Crea una rama, hace commit y sube los cambios automáticamente a origin."""
+    if not archivos_modificados:
+        return
+
+    print("\n====================================================")
+    print("🚀 GESTIÓN DE VERSIÓN (GIT AUTOMÁTICO)")
+    print("====================================================")
+    respuesta = input("👉 ¿Deseas subir estos cambios a una nueva rama remota ahora? (S/N): ").strip().lower()
+
+    if respuesta != 's':
+        print("⏭️ Omisión de subida a Git. Los cambios siguen listos en tu entorno local.")
+        return
+
+    nombre_rama = input("👉 Nombre de la nueva rama (Enter para usar nombre generado por IA): ").strip()
+    if not nombre_rama:
+        nombre_rama = f"fix/ia-auditoria-{datetime.now().strftime('%Y%m%d-%H%M')}"
+        print(f"   Usando nombre por defecto: {nombre_rama}")
+
+    mensaje_commit = input("👉 Mensaje del commit (Enter para usar mensaje estándar): ").strip()
+    if not mensaje_commit:
+        mensaje_commit = "Refactor: Aplicación de parches generados por IA (Auditoría automática)"
+        print(f"   Usando mensaje por defecto: '{mensaje_commit}'")
+
+    try:
+        print(f"\n   ⚙️  Creando rama '{nombre_rama}'...")
+        subprocess.run(["git", "checkout", "-b", nombre_rama], cwd=ruta_repo, check=True, capture_output=True, text=True)
+
+        print("   ⚙️  Añadiendo archivos al stage (git add)...")
+        for archivo in archivos_modificados:
+            subprocess.run(["git", "add", archivo], cwd=ruta_repo, check=True, capture_output=True, text=True)
+
+        print("   ⚙️  Registrando commit...")
+        subprocess.run(["git", "commit", "-m", mensaje_commit], cwd=ruta_repo, check=True, capture_output=True, text=True)
+
+        print(f"   ⏳ Subiendo cambios a origin/{nombre_rama} (Esto puede tardar unos segundos)...")
+        subprocess.run(["git", "push", "-u", "origin", nombre_rama], cwd=ruta_repo, check=True, capture_output=True, text=True)
+        
+        print(f"   ✅ ¡Éxito! Cambios subidos correctamente.")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"\n❌ Error crítico al ejecutar comandos Git en {ruta_repo}")
+        print(f"   Detalle del error: {e.stderr.strip() if e.stderr else e.stdout.strip()}")
+        logging.error(f"Fallo en Git ({e.cmd}): {e.stderr if e.stderr else e.stdout}")
+
 def aplicar_mejoras_interactivas(nombre_repo, ruta_base_proyecto):
-    """Lee el reporte del auditor y permite aplicar selectivamente las mejoras sugeridas."""
+    """Lee el reporte, exporta un JSON con los cambios disponibles y permite aplicarlos selectivamente."""
     archivo_auditoria = os.path.join(DIR_JSON, f"{nombre_repo}_auditoria.json")
     if not os.path.exists(archivo_auditoria): return
 
@@ -197,42 +277,92 @@ def aplicar_mejoras_interactivas(nombre_repo, ruta_base_proyecto):
             print("\n✨ El asistente no propuso modificaciones de código automáticas.")
             return
 
+        # 1. Crear y exportar la lista de cambios disponibles a un nuevo JSON
+        resumen_exportacion = []
+        for idx, propuesta in enumerate(puntos_con_parche, 1):
+            resumen_exportacion.append({
+                "id_cambio": idx,
+                "archivo": propuesta.get("archivo"),
+                "proposito": propuesta.get('vulnerabilidad') or 'Modificación solicitada',
+                "explicacion": propuesta.get('explicacion_sencilla', 'Sin detalles adicionales.')
+            })
+            
+        archivo_exportacion = os.path.join(DIR_JSON, f"{nombre_repo}_cambios_disponibles.json")
+        with open(archivo_exportacion, "w", encoding="utf-8") as f_export:
+            json.dump(resumen_exportacion, f_export, indent=4, ensure_ascii=False)
+            
+        print(f"\n💾 Archivo de cambios disponibles exportado a: {archivo_exportacion}")
+
+        # 2. Imprimir el menú de opciones
         print("\n====================================================")
-        print("🛠️  MODO INTERACTIVO: APLICACIÓN DE CAMBIOS EN CALIENTE")
+        print("🛠️  RESULTADOS DE LA AUDITORÍA: CAMBIOS DISPONIBLES")
         print("====================================================")
 
-        for idx, propuesta in enumerate(puntos_con_parche, 1):
+        for item in resumen_exportacion:
+            print(f"[{item['id_cambio']}] 📄 Archivo: {item['archivo']}")
+            print(f"    ⚠️  Propósito: {item['proposito']}")
+            print(f"    🎓 Explicación: {item['explicacion']}")
+            print("-" * 50)
+
+        # 3. Pedir al usuario que seleccione qué aplicar
+        print("\n👉 Introduce los números de los cambios a aplicar, separados por comas (ej. 1, 3).")
+        print("👉 O escribe 'T' para aplicarlos Todos. (Presiona Enter para cancelar).")
+        seleccion = input("Selección: ").strip().lower()
+
+        if not seleccion:
+            print("⏭️ Aplicación de cambios cancelada por el usuario.")
+            return
+
+        indices_a_aplicar = []
+        if seleccion == 't' or seleccion == 'todos':
+            indices_a_aplicar = list(range(1, len(puntos_con_parche) + 1))
+        else:
+            try:
+                partes = seleccion.split(',')
+                for p in partes:
+                    num = int(p.strip())
+                    if 1 <= num <= len(puntos_con_parche):
+                        indices_a_aplicar.append(num)
+            except ValueError:
+                print("❌ Error en el formato. Usa números separados por comas. Operación cancelada.")
+                return
+
+        if not indices_a_aplicar:
+            print("⏭️ No se seleccionó ningún cambio válido dentro del rango.")
+            return
+
+        # 4. Aplicar los cambios seleccionados
+        print("\n⚙️  APLICANDO CAMBIOS SELECCIONADOS...")
+        archivos_modificados_exito = [] 
+        
+        for idx in indices_a_aplicar:
+            propuesta = puntos_con_parche[idx - 1] 
             archivo_relativo = propuesta.get("archivo")
             ruta_archivo_real = os.path.join(ruta_base_proyecto, archivo_relativo)
+            codigo_ia = propuesta["codigo_corregido_completo"]
             
-            print(f"\n[Cambio {idx}/{len(puntos_con_parche)}] 📄 Archivo objetivo: {archivo_relativo}")
-            print(f"⚠️ Propósito: {propuesta.get('vulnerabilidad') or 'Modificación solicitada'}")
+            print(f"\nProcesando [{idx}]: {archivo_relativo}...")
             
-            # 🎓 Modo Tutor: Explicación sencilla de la IA
-            explicacion = propuesta.get('explicacion_sencilla', 'Sin detalles adicionales.')
-            print(f"🎓 Explicación para humanos: {explicacion}")
-            print("-" * 50)
-            
-            respuesta = input(f"👉 ¿Quieres aplicar este cambio en tu archivo local? (S/N): ").strip().lower()
-            
-            if respuesta == 's':
-                codigo_ia = propuesta["codigo_corregido_completo"]
+            # Escudo Anti-Bugs
+            if not validar_sintaxis_python(codigo_ia, archivo_relativo):
+                print("   ⏭️ Cambio omitido automáticamente para proteger tu repositorio (Error Sintáctico).")
+                continue
                 
-                # Ejecutar Escudo Anti-Bugs
-                if not validar_sintaxis_python(codigo_ia, archivo_relativo):
-                    print("⏭️ Cambio omitido automáticamente para proteger tu repositorio.")
-                    continue
-                    
-                if os.path.exists(ruta_archivo_real):
-                    shutil.copy2(ruta_archivo_real, f"{ruta_archivo_real}.bak")
-                    try:
-                        with open(ruta_archivo_real, "w", encoding="utf-8") as f_out:
-                            f_out.write(codigo_ia)
-                        print(f"✅ ¡Archivo '{archivo_relativo}' modificado con éxito! (Copia .bak guardada)")
-                    except Exception as e:
-                        print(f"❌ Error escribiendo cambios: {e}")
+            if os.path.exists(ruta_archivo_real):
+                shutil.copy2(ruta_archivo_real, f"{ruta_archivo_real}.bak")
+                try:
+                    with open(ruta_archivo_real, "w", encoding="utf-8") as f_out:
+                        f_out.write(codigo_ia)
+                    print(f"   ✅ ¡Archivo modificado con éxito! (Copia .bak guardada)")
+                    archivos_modificados_exito.append(archivo_relativo) 
+                except Exception as e:
+                    print(f"   ❌ Error escribiendo cambios: {e}")
             else:
-                print("⏭️ Cambio descartado por el desarrollador.")
+                print(f"   ❌ El archivo no existe en el disco local: {ruta_archivo_real}")
+
+        # 5. Lanzar proceso Git si hubo modificaciones exitosas
+        if archivos_modificados_exito:
+            gestionar_cambios_git(ruta_base_proyecto, archivos_modificados_exito)
 
     except Exception as e:
         print(f"⚠️ Error procesando la interactividad: {e}")
@@ -271,12 +401,12 @@ def procesar_repo(url_o_ruta_completa, default_branch=None, existing_action=None
     entorno_subproceso["NOMBRE_MICROSERVICIO"] = nombre_repo
     entorno_subproceso["DIR_SALIDA_JSON"] = os.path.abspath(DIR_JSON)
     entorno_subproceso["PYTHONUNBUFFERED"] = "1"
-    entorno_subproceso["PYTHONIOENCODING"] = "utf-8"
+    entorno_subproceso["PYTHONIOENCODING"] = "utf-8" 
+
     try:
         comando = [sys.executable, "code_auditor_agent.py", ruta_trabajo]
         if cambios: comando.extend(["--cambios", cambios])
         
-        # Popen permite capturar la salida en tiempo real
         with subprocess.Popen(
             comando, 
             env=entorno_subproceso, 
@@ -287,7 +417,6 @@ def procesar_repo(url_o_ruta_completa, default_branch=None, existing_action=None
             bufsize=1
         ) as proc:
             
-            # Leer e imprimir cada línea del agente en tiempo real
             for linea in proc.stdout:
                 logging.info(linea.strip('\n'))
                 
@@ -315,13 +444,21 @@ def main():
     args = parser.parse_args()
 
     forzar_configuracion_api_key(cli_key=args.api_key)
-    repos = args.repos if args.repos else obtener_repositorios_interactivo()
-    if not repos: sys.exit(0)
-
+    
+    repos = args.repos
     cambios_a_enviar = args.cambios
-    if not args.repos:
-        print("----------------------------------------------------")
-        opcion_cambios = input("👉 ¿Qué cambios quieres implementar o qué deseas auditar? (Enter para omitir): ").strip()
+    
+    if not repos:
+        resultado = obtener_repositorios_interactivo()
+        if not resultado: sys.exit(0)
+        
+        repos, cambios_interactivos = resultado
+        if cambios_interactivos:
+            cambios_a_enviar = cambios_interactivos
+
+    elif args.repos and not args.cambios:
+        print("\n----------------------------------------------------")
+        opcion_cambios = input("👉 ¿Qué cambios quieres implementar o auditar? (Enter para omitir): ").strip()
         if opcion_cambios: cambios_a_enviar = opcion_cambios
 
     for repo in repos:
