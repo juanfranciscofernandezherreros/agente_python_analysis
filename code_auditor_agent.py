@@ -54,14 +54,13 @@ def extraer_codigo_base(target_path):
     print(f"   ↳ [Agente]: Extrayendo archivos desde {ruta_base.resolve()}...")
 
     for archivo in ruta_base.rglob("*"):
-        # Ignorar si alguna parte de la ruta contiene un directorio bloqueado
         if any(part in directorios_ignorados for part in archivo.parts):
             continue
             
         if archivo.is_file() and archivo.name not in archivos_ignorados and archivo.suffix.lower() in extensiones_validas:
             try:
                 contenido = archivo.read_text(encoding='utf-8', errors='ignore')
-                ruta_relativa = archivo.relative_to(ruta_base).as_posix()
+                ruta_relativa = archivo.relative_to(ruta_base).as_posix() 
                 codigo_empaquetado.append({"archivo": ruta_relativa, "contenido": contenido})
             except Exception as e:
                 print(f"   ⚠️ Error leyendo {archivo.name}: {str(e)}")
@@ -90,7 +89,7 @@ def agrupar_en_lotes(codigo_proyecto, max_chars=80000):
     return lotes
 
 def procesar_lote_concurrente(client, modelo, lote, index, total_lotes, config, cambios):
-    """Función que procesa un solo lote para ser ejecutada en un ThreadPool."""
+    """Función de trabajador que procesa el lote llamando a la API inmediatamente."""
     enfoque_usuario = f"\n🎯 CAMBIOS SOLICITADOS:\n{cambios}" if cambios else ""
     contenido_usuario = f"Lote {index} de {total_lotes}:\n{json.dumps(lote, ensure_ascii=False)}{enfoque_usuario}"
     
@@ -106,14 +105,14 @@ def procesar_lote_concurrente(client, modelo, lote, index, total_lotes, config, 
             
         except APIError as e:
             msg = str(e.message) if hasattr(e, 'message') else str(e)
+            print(f"      ⚠️ [Lote {index}] APIError: {msg}") 
+            
             if intento < max_reintentos:
-                espera = (2 ** intento) * 5  # Backoff exponencial: 10s, 20s...
-                if "quota" in msg.lower() or "429" in msg:
-                    espera = 45
-                print(f"      ⏳ [Lote {index}] Cuota saturada/Error. Reintentando en {espera}s...")
+                espera = 20 * intento 
+                print(f"      ⏳ [Lote {index}] Reintentando en {espera}s...")
                 time.sleep(espera)
         except Exception as e:
-            print(f"      ⚠️ [Lote {index}] Error crítico: {str(e)}")
+            print(f"      ⚠️ [Lote {index}] Error crítico local: {str(e)}")
             break
             
     return None
@@ -134,7 +133,6 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
         "IMPORTANTE: NO devuelvas archivos completos. Devuelve SOLO el DIFF o las líneas exactas que deben modificarse."
     )
     
-    # Aseguramos el JSON perfecto mediante Pydantic
     config = types.GenerateContentConfig(
         system_instruction=prompt_sistema, 
         response_mime_type="application/json", 
@@ -142,7 +140,6 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
         temperature=0.2
     )
 
-    # 🏎️ Agrupación inteligente por tamaño
     lotes = agrupar_en_lotes(codigo_proyecto, max_chars=80000)
     total_lotes = len(lotes)
     
@@ -158,21 +155,26 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     
     scores = []
     lotes_ok = 0
-
-    # 🚀 Concurrencia real con ThreadPoolExecutor
-    print("\n   🚀 Iniciando análisis concurrente...")
-    with ThreadPoolExecutor(max_workers=3) as executor: # Ajusta max_workers según tu cuota (Rate Limit) de la API
+    
+    print("\n   🚀 Iniciando envío CONCURRENTE puro (todas las peticiones a la vez)...")
+    
+    # Asignamos tantos workers como lotes haya para que no exista cola de espera
+    max_hilos = total_lotes if total_lotes > 0 else 1
+    
+    with ThreadPoolExecutor(max_workers=max_hilos) as executor:
+        # Esto dispara todos los lotes inmediatamente en hilos separados
         futuros = {
-            executor.submit(procesar_lote_concurrente, client, modelo_activo, lote, idx, total_lotes, config, cambios): idx 
-            for idx, lote in enumerate(lotes, 1)
+            executor.submit(procesar_lote_concurrente, client, modelo_activo, lote, index, total_lotes, config, cambios): index
+            for index, lote in enumerate(lotes, 1)
         }
         
+        # Procesamos los resultados conforme vayan llegando
         for futuro in as_completed(futuros):
             idx = futuros[futuro]
             res = futuro.result()
             
             if res:
-                print(f"      ✅ [Lote {idx}] Analizado con éxito.")
+                print(f"      ✅ [Lote {idx}] Procesamiento completado con éxito.")
                 lotes_ok += 1
                 puntos = res.get("puntos_criticos_seguridad", [])
                 reporte_consolidado["puntos_criticos_seguridad"].extend(puntos)
@@ -192,24 +194,42 @@ def main():
     parser.add_argument("-c", "--cambios", type=str, default="")
     args = parser.parse_args()
     
+    # 1. Definir rutas antes de gastar recursos
+    nombre_ms = os.environ.get("NOMBRE_MICROSERVICIO", Path(args.target_path).name)
+    dir_salida = Path(os.environ.get("DIR_SALIDA_JSON", "."))
+    dir_salida.mkdir(parents=True, exist_ok=True)
+    archivo_salida = dir_salida / f"{nombre_ms}_auditoria.json"
+    
+    # 2. 🛡️ SISTEMA DE CACHÉ / AHORRO DE TOKENS
+    # Si la auditoría ya existe y el usuario NO pidió cambios nuevos, evitamos la llamada a Gemini.
+    if archivo_salida.exists() and not args.cambios.strip():
+        print(f"\n⏩ [Agente]: Auditoría previa encontrada para '{nombre_ms}'.")
+        print(f"   ↳ Se saltará el análisis de la API para ahorrar tokens.")
+        
+        # Saltamos directo al reportero
+        if Path("reporter_agent.py").exists():
+            entorno_reportero = os.environ.copy()
+            entorno_reportero["ARCHIVO_JSON_ORIGEN"] = str(archivo_salida)
+            subprocess.run([sys.executable, "reporter_agent.py"], env=entorno_reportero, text=True, encoding='utf-8')
+        sys.exit(0) # Salida exitosa sin gastar cuota
+        
+    # 3. Si no hay caché o se pidieron modificaciones, procedemos con el análisis pesado
+    print(f"\n🔍 [Agente]: Iniciando nueva auditoría/modificación para '{nombre_ms}'...")
     codigo_proyecto = extraer_codigo_base(args.target_path)
-    if not codigo_proyecto: sys.exit(1)
+    
+    if not codigo_proyecto: 
+        print("❌ [Agente] No se encontró código válido para analizar.")
+        sys.exit(1)
         
     print(f"   ↳ [Agente]: {len(codigo_proyecto)} archivos útiles listos para procesarse.")
     informe_final = analizar_con_gemini_robusto(codigo_proyecto, cambios=args.cambios)
     
     if informe_final:
-        nombre_ms = os.environ.get("NOMBRE_MICROSERVICIO", "microservicio_desconocido")
-        dir_salida = Path(os.environ.get("DIR_SALIDA_JSON", "."))
-        dir_salida.mkdir(parents=True, exist_ok=True)
-        archivo_salida = dir_salida / f"{nombre_ms}_auditoria.json"
-        
         try:
             with open(archivo_salida, "w", encoding="utf-8") as f:
                 json.dump(informe_final, f, indent=4, ensure_ascii=False)
-            print(f"✅ [Agente]: Reporte guardado en -> {archivo_salida}")
+            print(f"✅ [Agente]: Nuevo reporte guardado en -> {archivo_salida}")
             
-            # Encadenar ejecución con el reportero si existe
             if Path("reporter_agent.py").exists():
                 entorno_reportero = os.environ.copy()
                 entorno_reportero["ARCHIVO_JSON_ORIGEN"] = str(archivo_salida)
