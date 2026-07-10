@@ -1,62 +1,14 @@
-2026-07-03 09:26:25 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
-2026-07-03 10:21:41 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
-2026-07-03 10:21:47 [INFO] Traceback (most recent call last):
-2026-07-03 10:21:47 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 164, in <module>
-2026-07-03 10:21:47 [INFO]     main()
-2026-07-03 10:21:47 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 137, in main
-2026-07-03 10:21:47 [INFO]     codigo_proyecto = extraer_codigo_base(args.target_path)
-2026-07-03 10:21:47 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 26, in extraer_codigo_base
-2026-07-03 10:21:47 [INFO]     print(f"   \u21b3 [Agente]: Extrayendo archivos desde {target_path}...")
-2026-07-03 10:21:47 [INFO]   File "C:\Program Files\Python39\lib\encodings\cp1252.py", line 19, in encode
-2026-07-03 10:21:47 [INFO]     return codecs.charmap_encode(input,self.errors,encoding_table)[0]
-2026-07-03 10:21:47 [INFO] UnicodeEncodeError: 'charmap' codec can't encode character '\u21b3' in position 3: character maps to <undefined>
-2026-07-10 11:04:25 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
-2026-07-10 11:04:32 [INFO]    ↳ [Agente]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python...
-2026-07-10 11:04:32 [INFO]    ↳ [Agente]: 2 archivos útiles listos para procesarse.
-2026-07-10 11:04:33 [INFO] 
-2026-07-10 11:04:33 [INFO]    📦 [Modo Veloz]: Proyecto dividido en 1 lotes de (15 archivos máx).
-2026-07-10 11:04:33 [INFO] 
-2026-07-10 11:04:33 [INFO]    🚀 [Lote 1/1]: Enviando 2 archivos a Gemini...
-2026-07-10 11:04:33 [INFO]       ⏳ Cuota saturada. Esperando 5s...
-2026-07-10 11:06:23 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
-2026-07-10 11:06:26 [INFO]    ↳ [Agente]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python...
-2026-07-10 11:06:26 [INFO]    ↳ [Agente]: 2 archivos útiles listos para procesarse.
-2026-07-10 11:06:26 [INFO] 
-2026-07-10 11:06:26 [INFO]    📦 [Modo Veloz]: Proyecto dividido en 1 lotes de (15 archivos máx).
-2026-07-10 11:06:26 [INFO] 
-2026-07-10 11:06:26 [INFO]    🚀 [Lote 1/1]: Enviando 2 archivos a Gemini...
-2026-07-10 11:08:03 [INFO] Traceback (most recent call last):
-2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 164, in <module>
-2026-07-10 11:08:03 [INFO]     main()
-2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 141, in main
-2026-07-10 11:08:03 [INFO]     informe_final = analizar_con_gemini_robusto(codigo_proyecto, cambios=args.cambios)
-2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 114, in analizar_con_gemini_robusto
-2026-07-10 11:08:03 [INFO]     res = ejecutar_llamada_api(client, modelo_activo, contenido_usuario, config)
-2026-07-10 11:08:03 [INFO]   File "C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\code_auditor_agent.py", line 48, in ejecutar_llamada_api
-2026-07-10 11:08:03 [INFO]     return json.loads(respuesta.text)
-2026-07-10 11:08:03 [INFO]   File "C:\Program Files\Python39\lib\json\__init__.py", line 346, in loads
-2026-07-10 11:08:03 [INFO]     return _default_decoder.decode(s)
-2026-07-10 11:08:03 [INFO]   File "C:\Program Files\Python39\lib\json\decoder.py", line 337, in decode
-2026-07-10 11:08:03 [INFO]     obj, end = self.raw_decode(s, idx=_w(s, 0).end())
-2026-07-10 11:08:03 [INFO]   File "C:\Program Files\Python39\lib\json\decoder.py", line 353, in raw_decode
-2026-07-10 11:08:03 [INFO]     obj, end = self.scan_once(s, idx)
-2026-07-10 11:08:03 [INFO] json.decoder.JSONDecodeError: Invalid \escape: line 12 column 6494 (char 8494)
-2026-07-10 11:26:35 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
-2026-07-10 11:26:37 [INFO]    ↳ [Agente]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python...
-2026-07-10 11:26:37 [INFO]    ↳ [Agente]: 2 archivos útiles listos para procesarse.
-2026-07-10 11:26:38 [INFO] 
-2026-07-10 11:26:38 [INFO]    📦 [Modo Veloz]: Proyecto dividido en 1 lotes de (15 archivos máx).
-2026-07-10 11:26:38 [INFO] 
-2026-07-10 11:26:38 [INFO]    🚀 [Lote 1/1]: Enviando 2 archivos a Gemini...
-2026-07-10 11:27:44 [INFO] ✅ [Agente]: Reporte guardado en -> C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\json_output\agente_python_auditoria.json
-2026-07-10 11:30:18 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
-2026-07-10 11:30:21 [INFO]    ↳ [Agente]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python...
-2026-07-10 11:30:21 [INFO]    ↳ [Agente]: 2 archivos útiles listos para procesarse.
-2026-07-10 11:30:22 [INFO] 
-2026-07-10 11:30:22 [INFO]    📦 [Modo Veloz]: Proyecto dividido en 1 lotes de (15 archivos máx).
-2026-07-10 11:30:22 [INFO] 
-2026-07-10 11:30:22 [INFO]    🚀 [Lote 1/1]: Enviando 2 archivos a Gemini...
-2026-07-10 11:33:05 [INFO] ✅ [Agente]: Reporte guardado en -> C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\json_output\agente_python_auditoria.json
-2026-07-10 11:33:53 [ERROR] Fallo en Git (['git', 'commit', 'm', 'Refactor: Aplicación de parches generados por IA (Auditoría automática)']): error: pathspec 'm' did not match any file(s) known to git
-error: pathspec 'Refactor: AplicaciÃ³n de parches generados por IA (AuditorÃ­a automÃ¡tica)' did not match any file(s) known to git
-
+2026-07-10 12:43:27 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python ---
+2026-07-10 12:43:27 [INFO] Ruta de origen: C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python
+2026-07-10 12:43:27 [INFO] Carpeta de trabajo: C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python
+2026-07-10 12:43:27 [INFO] Ejecutando agente: C:\Program Files\Python39\python.exe code_auditor_agent.py C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python --cambios Optimiza tu script implementando concurrencia (ThreadPoolExecutor) en vez de pausas fijas, agrupando lotes por límite de caracteres o tokens en lugar del número de archivos, garantizando la estructura del JSON con response_schema (Pydantic), usando pathlib en lugar de os, y pidiendo al modelo que devuelva solo los diffs en vez del código completo.
+2026-07-10 12:43:33 [INFO] [AGENTE] ↳ [Agente]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python...
+2026-07-10 12:43:34 [INFO] [AGENTE] ↳ [Agente]: 19 archivos útiles listos para procesarse.
+2026-07-10 12:43:34 [INFO] [AGENTE] 
+2026-07-10 12:43:34 [INFO] [AGENTE] 📦 Proyecto dividido dinámicamente en 2 lotes por límite de contexto.
+2026-07-10 12:43:34 [INFO] [AGENTE] 
+2026-07-10 12:43:34 [INFO] [AGENTE] 🚀 Iniciando análisis concurrente...
+2026-07-10 12:44:05 [INFO] [AGENTE] ✅ [Lote 2] Analizado con éxito.
+2026-07-10 12:45:23 [INFO] [AGENTE] ✅ [Lote 1] Analizado con éxito.
+2026-07-10 12:45:23 [INFO] [AGENTE] ✅ [Agente]: Reporte guardado en -> C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python\json_output\agente_python_auditoria.json
+2026-07-10 12:45:24 [INFO] --- PROCESO PARA agente_python FINALIZADO CON ÉXITO ---
