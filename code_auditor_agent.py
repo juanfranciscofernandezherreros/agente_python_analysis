@@ -36,8 +36,9 @@ class PuntoCritico(BaseModel):
     codigo_corregido_completo: str = Field(
         default="",
         description=(
-            "Si requiere_parche es true, contenido ÍNTEGRO del archivo ya corregido, "
-            "listo para sobrescribir el fichero original tal cual (sin markdown, sin backticks). "
+            "Si requiere_parche es true, contenido ÍNTEGRO del archivo ya corregido "
+            "o del NUEVO archivo creado, listo para sobrescribir o crear el fichero "
+            "original tal cual (sin markdown, sin backticks). "
             "Si requiere_parche es false, deja este campo vacío."
         )
     )
@@ -168,14 +169,32 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     client = genai.Client(api_key=api_key)
     modelo_activo = 'gemini-2.5-flash'
     
-    prompt_sistema = (
-        "Eres un ingeniero de software senior y auditor técnico.\n"
-        "1. Si el desarrollador solicita cambios, aplica esa modificación exacta en los archivos correspondientes.\n"
-        "2. Si no hay instrucciones, busca bugs y vulnerabilidades críticas.\n"
-        "IMPORTANTE: Cuando 'requiere_parche' sea true, en 'codigo_corregido_completo' devuelve el ARCHIVO "
-        "COMPLETO ya corregido (todo el fichero, no un fragmento ni un diff), listo para sobrescribir el "
-        "original directamente. No incluyas backticks de markdown ni explicaciones dentro de ese campo."
-    )
+    # 🚀 BIFURCACIÓN DE PROMPTS SEGÚN EL FLUJO DEL ORQUESTADOR
+    if cambios:
+        # MODO DESARROLLADOR: El usuario pidió algo (Opción 2 del menú)
+        prompt_sistema = (
+            "Eres un ingeniero de software senior.\n"
+            "Tu ÚNICA tarea es aplicar la modificación o refactor que pide el usuario.\n"
+            "NO hagas auditorías de seguridad ni busques vulnerabilidades.\n"
+            "Para rellenar el JSON de salida usa esta guía exacta:\n"
+            "- 'severidad': Usa siempre 'INFO'.\n"
+            "- 'vulnerabilidad': Escribe un título corto del cambio (ej. 'Eliminación de comentarios', 'Creación de README').\n"
+            "- 'solucion': Describe brevemente qué hiciste.\n"
+            "- 'explicacion_sencilla': Escribe 'Se aplicó el cambio solicitado por el usuario'.\n"
+            "- 'requiere_parche': Ponlo en true.\n"
+            "IMPORTANTE: En 'codigo_corregido_completo' devuelve el ARCHIVO COMPLETO (todo el fichero modificado o creado), "
+            "listo para sobrescribir o crear directamente. No incluyas backticks de markdown."
+        )
+    else:
+        # MODO AUDITOR: Búsqueda de bugs (Opción 1 del menú)
+        prompt_sistema = (
+            "Eres un ingeniero de software senior y auditor técnico.\n"
+            "Analiza el código buscando EXCLUSIVAMENTE bugs críticos, vulnerabilidades de seguridad y problemas graves de arquitectura.\n"
+            "NO reportes problemas de estilo, formato o comentarios (a menos que filtren credenciales).\n"
+            "Si encuentras un problema grave, clasifica su severidad (Alta, Media, Baja) y explica el fallo en los campos correspondientes.\n"
+            "Si sabes cómo solucionarlo de forma segura, pon 'requiere_parche' en true y en 'codigo_corregido_completo' "
+            "devuelve el ARCHIVO COMPLETO ya corregido (sin backticks de markdown)."
+        )
     
     config = types.GenerateContentConfig(
         system_instruction=prompt_sistema, 
@@ -203,17 +222,14 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     
     print("\n   🚀 Iniciando envío CONCURRENTE puro (todas las peticiones a la vez)...")
     
-    # Asignamos tantos workers como lotes haya para que no exista cola de espera
     max_hilos = total_lotes if total_lotes > 0 else 1
     
     with ThreadPoolExecutor(max_workers=max_hilos) as executor:
-        # Esto dispara todos los lotes inmediatamente en hilos separados
         futuros = {
             executor.submit(procesar_lote_concurrente, client, modelo_activo, lote, index, total_lotes, config, cambios): index
             for index, lote in enumerate(lotes, 1)
         }
         
-        # Procesamos los resultados conforme vayan llegando
         for futuro in as_completed(futuros):
             idx = futuros[futuro]
             res = futuro.result()
@@ -234,13 +250,7 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     return None
 
 def _cache_es_compatible(archivo_salida: Path) -> bool:
-    """Valida que el JSON en caché fue generado con la versión de esquema actual.
-
-    Evita que informes generados con una versión anterior del agente (con un
-    formato de campos distinto, p.ej. 'parche_diff' en vez de
-    'codigo_corregido_completo') se sirvan como válidos y el orquestador no
-    encuentre nada aplicable en silencio, sin que quede claro por qué.
-    """
+    """Valida que el JSON en caché fue generado con la versión de esquema actual."""
     try:
         with open(archivo_salida, "r", encoding="utf-8") as f:
             datos = json.load(f)
@@ -263,7 +273,6 @@ def main():
     archivo_salida = dir_salida / f"{nombre_ms}_auditoria.json"
     
     # 2. 🛡️ SISTEMA DE CACHÉ / AHORRO DE TOKENS
-    # Si la auditoría ya existe, es del esquema actual y el usuario NO pidió cambios nuevos, evitamos la llamada a Gemini.
     cache_valida = archivo_salida.exists() and _cache_es_compatible(archivo_salida)
     if archivo_salida.exists() and not cache_valida:
         print(f"   ↳ [Agente]: Auditoría previa de '{nombre_ms}' es de un formato antiguo (incompatible). Se regenerará.")
