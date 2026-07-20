@@ -204,8 +204,9 @@ def obtener_repositorios_interactivo() -> Optional[Tuple[List[str], Optional[str
         print("1. Analizar una carpeta local (Abre ventana Tkinter) 📂")
         print("2. Analizar un repositorio remoto (Git URL) 🌐")
         print("3. Cambiar / Reemplazar la Gemini API Key actual 🔑")
+        print("4. Generar un microservicio 'Hello World' local 🏗️")
 
-        opcion = input("\n👉 Elige una opción (1, 2 o 3): ").strip()
+        opcion = input("\n👉 Elige una opción (1, 2, 3 o 4): ").strip()
 
         if opcion == "3":
             forzar_configuracion_api_key(cambiar_key=True)
@@ -232,6 +233,28 @@ def obtener_repositorios_interactivo() -> Optional[Tuple[List[str], Optional[str
                 continue
             print(f"\n✅ Repositorio seleccionado: {url}")
             ruta_final = f"{url}#{rama}" if rama else url
+            
+        elif opcion == "4":
+            nombre_ms = input("👉 Introduce un nombre para tu microservicio (ej. 'auth-service'): ").strip()
+            if not nombre_ms:
+                print("❌ Nombre no válido. Operación cancelada.")
+                continue
+                
+            script_generador = "generador_microservicio.py"
+            if not os.path.exists(script_generador):
+                print(f"❌ Error: No se encuentra el archivo '{script_generador}' en la misma ruta.")
+                continue
+                
+            carpeta_destino = os.path.abspath(DIR_MICROSERVICES)
+            try:
+                print(f"\n⏳ Generando esqueleto para '{nombre_ms}'...")
+                # Llamada al script externo
+                subprocess.run([sys.executable, script_generador, nombre_ms, carpeta_destino], check=True)
+                ruta_final = os.path.join(carpeta_destino, nombre_ms)
+                print(f"✅ Carpeta de trabajo establecida en: {ruta_final}")
+            except subprocess.CalledProcessError:
+                print("❌ Hubo un error al ejecutar el generador de microservicios.")
+                continue
 
         else:
             print("❌ Opción no válida. Inténtalo de nuevo.")

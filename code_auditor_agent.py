@@ -29,7 +29,8 @@ class PuntoCritico(BaseModel):
     solucion: str
     explicacion_sencilla: str
     requiere_parche: bool
-    parche_diff: str = Field(description="Proporciona SOLO el diff o las líneas exactas a cambiar. NO envíes el código completo.")
+    # 🔴 CAMBIO CLAVE: El orquestador busca esta clave exacta para sobreescribir el archivo
+    codigo_corregido_completo: str = Field(description="Proporciona el código COMPLETO del archivo con las modificaciones aplicadas. NO uses diffs, devuelve todo el contenido listo para ser guardado.")
 
 class ReporteAuditoria(BaseModel):
     nombre_microservicio: str
@@ -130,7 +131,7 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
         "Eres un ingeniero de software senior y auditor técnico.\n"
         "1. Si el desarrollador solicita cambios, aplica esa modificación exacta en los archivos correspondientes.\n"
         "2. Si no hay instrucciones, busca bugs y vulnerabilidades críticas.\n"
-        "IMPORTANTE: NO devuelvas archivos completos. Devuelve SOLO el DIFF o las líneas exactas que deben modificarse."
+        "IMPORTANTE: Debes devolver el código COMPLETO del archivo modificado en el campo 'codigo_corregido_completo'. No uses diffs ni resúmenes."
     )
     
     config = types.GenerateContentConfig(
@@ -158,17 +159,14 @@ def analizar_con_gemini_robusto(codigo_proyecto, cambios=None):
     
     print("\n   🚀 Iniciando envío CONCURRENTE puro (todas las peticiones a la vez)...")
     
-    # Asignamos tantos workers como lotes haya para que no exista cola de espera
     max_hilos = total_lotes if total_lotes > 0 else 1
     
     with ThreadPoolExecutor(max_workers=max_hilos) as executor:
-        # Esto dispara todos los lotes inmediatamente en hilos separados
         futuros = {
             executor.submit(procesar_lote_concurrente, client, modelo_activo, lote, index, total_lotes, config, cambios): index
             for index, lote in enumerate(lotes, 1)
         }
         
-        # Procesamos los resultados conforme vayan llegando
         for futuro in as_completed(futuros):
             idx = futuros[futuro]
             res = futuro.result()
@@ -194,26 +192,16 @@ def main():
     parser.add_argument("-c", "--cambios", type=str, default="")
     args = parser.parse_args()
     
-    # 1. Definir rutas antes de gastar recursos
     nombre_ms = os.environ.get("NOMBRE_MICROSERVICIO", Path(args.target_path).name)
     dir_salida = Path(os.environ.get("DIR_SALIDA_JSON", "."))
     dir_salida.mkdir(parents=True, exist_ok=True)
     archivo_salida = dir_salida / f"{nombre_ms}_auditoria.json"
     
-    # 2. 🛡️ SISTEMA DE CACHÉ / AHORRO DE TOKENS
-    # Si la auditoría ya existe y el usuario NO pidió cambios nuevos, evitamos la llamada a Gemini.
     if archivo_salida.exists() and not args.cambios.strip():
         print(f"\n⏩ [Agente]: Auditoría previa encontrada para '{nombre_ms}'.")
         print(f"   ↳ Se saltará el análisis de la API para ahorrar tokens.")
+        sys.exit(0) 
         
-        # Saltamos directo al reportero
-        if Path("reporter_agent.py").exists():
-            entorno_reportero = os.environ.copy()
-            entorno_reportero["ARCHIVO_JSON_ORIGEN"] = str(archivo_salida)
-            subprocess.run([sys.executable, "reporter_agent.py"], env=entorno_reportero, text=True, encoding='utf-8')
-        sys.exit(0) # Salida exitosa sin gastar cuota
-        
-    # 3. Si no hay caché o se pidieron modificaciones, procedemos con el análisis pesado
     print(f"\n🔍 [Agente]: Iniciando nueva auditoría/modificación para '{nombre_ms}'...")
     codigo_proyecto = extraer_codigo_base(args.target_path)
     
@@ -229,11 +217,7 @@ def main():
             with open(archivo_salida, "w", encoding="utf-8") as f:
                 json.dump(informe_final, f, indent=4, ensure_ascii=False)
             print(f"✅ [Agente]: Nuevo reporte guardado en -> {archivo_salida}")
-            
-            if Path("reporter_agent.py").exists():
-                entorno_reportero = os.environ.copy()
-                entorno_reportero["ARCHIVO_JSON_ORIGEN"] = str(archivo_salida)
-                subprocess.run([sys.executable, "reporter_agent.py"], env=entorno_reportero, text=True, encoding='utf-8')
+            # 🔴 ELIMINADA LA LLAMADA A reporter_agent.py AQUI
         except Exception as e:
             print(f"❌ Error guardando el JSON: {e}")
             sys.exit(1)
