@@ -1,52 +1,31 @@
 import json
 import os
+import argparse
 
 def limpiar_markdown(texto: str) -> str:
-    """Limpia las comillas invertidas (```python) que suele poner Gemini."""
+    """Limpia las comillas invertidas que suele poner Gemini."""
     if not texto: return ""
     lineas = texto.strip().split("\n")
     if lineas and lineas[0].startswith("```"): lineas = lineas[1:]
     if lineas and lineas[-1].startswith("```"): lineas = lineas[:-1]
     return "\n".join(lineas).strip()
 
-def seleccionar_archivo_y_carpeta():
-    """Usa Tkinter para que el usuario seleccione visualmente qué aplicar y dónde."""
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes('-topmost', True)
-        
-        print("\n1️⃣ Abriendo explorador... Selecciona el archivo JSON de la auditoría.")
-        ruta_json = filedialog.askopenfilename(
-            title="1. Selecciona el archivo JSON", 
-            filetypes=[("Archivos JSON", "*.json")]
-        )
-        
-        if not ruta_json:
-            return None, None
-
-        print("2️⃣ Abriendo explorador... Selecciona la carpeta del proyecto a modificar.")
-        ruta_proyecto = filedialog.askdirectory(
-            title="2. Selecciona la carpeta destino (La misma del Paso 1 del orquestador)"
-        )
-        
-        root.destroy()
-        return ruta_json, ruta_proyecto
-    except ImportError:
-        print("❌ Error: La librería gráfica Tkinter no está disponible.")
-        return None, None
-
 def main():
-    ruta_json, ruta_proyecto = seleccionar_archivo_y_carpeta()
-    
-    if not ruta_json or not ruta_proyecto:
-        print("⏭️ Operación cancelada por el usuario.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--proyecto", type=str, required=True, help="Carpeta destino del proyecto")
+    parser.add_argument("--json", type=str, required=True, help="Archivo JSON con los cambios")
+    args = parser.parse_args()
+
+    ruta_proyecto = args.proyecto
+    ruta_json = args.json
+
+    if not os.path.exists(ruta_json):
+        print(f"\n❌ No se encuentra el archivo JSON: {ruta_json}")
+        print("⚠️ Asegúrate de haber ejecutado una 'Auditoría general' primero para generar este reporte.")
         return
 
-    print(f"\n📄 JSON cargado: {os.path.basename(ruta_json)}")
-    print(f"📂 Carpeta destino: {ruta_proyecto}")
+    print(f"\n📄 JSON cargado automáticamente: {os.path.basename(ruta_json)}")
+    print(f"📂 Carpeta destino confirmada: {ruta_proyecto}")
 
     with open(ruta_json, "r", encoding="utf-8") as f:
         datos = json.load(f)
@@ -77,20 +56,16 @@ def main():
         respuesta = input("👉 ¿Quieres sobrescribir este archivo? (s/n): ").strip().lower()
 
         if respuesta == 's':
-            # Limpiamos barras invertidas por si venimos de Windows/Linux cruzado
             archivo_limpio = archivo.replace("\\", "/").lstrip("/")
-            
-            # Si Gemini incluyó la carpeta raíz en el nombre, la quitamos
             nombre_carpeta = os.path.basename(ruta_proyecto)
+            
             if archivo_limpio.startswith(f"{nombre_carpeta}/"):
                 archivo_limpio = archivo_limpio[len(nombre_carpeta)+1:]
 
             ruta_absoluta = os.path.join(ruta_proyecto, archivo_limpio)
             
             try:
-                # Creamos las subcarpetas si no existen
                 os.makedirs(os.path.dirname(ruta_absoluta), exist_ok=True)
-                
                 codigo_limpio = limpiar_markdown(codigo_nuevo)
                 with open(ruta_absoluta, "w", encoding="utf-8") as f_out:
                     f_out.write(codigo_limpio)
