@@ -5,7 +5,6 @@ import shutil
 import json
 import traceback
 import logging
-import ast
 import time
 from datetime import datetime
 from typing import Optional, List, Tuple
@@ -204,9 +203,8 @@ def obtener_repositorios_interactivo() -> Optional[Tuple[List[str], Optional[str
         print("1. Analizar una carpeta local (Abre ventana Tkinter) 📂")
         print("2. Analizar un repositorio remoto (Git URL) 🌐")
         print("3. Cambiar / Reemplazar la Gemini API Key actual 🔑")
-        print("4. Generar un microservicio 'Hello World' local 🏗️")
 
-        opcion = input("\n👉 Elige una opción (1, 2, 3 o 4): ").strip()
+        opcion = input("\n👉 Elige una opción (1, 2 o 3): ").strip()
 
         if opcion == "3":
             forzar_configuracion_api_key(cambiar_key=True)
@@ -233,28 +231,6 @@ def obtener_repositorios_interactivo() -> Optional[Tuple[List[str], Optional[str
                 continue
             print(f"\n✅ Repositorio seleccionado: {url}")
             ruta_final = f"{url}#{rama}" if rama else url
-            
-        elif opcion == "4":
-            nombre_ms = input("👉 Introduce un nombre para tu microservicio (ej. 'auth-service'): ").strip()
-            if not nombre_ms:
-                print("❌ Nombre no válido. Operación cancelada.")
-                continue
-                
-            script_generador = "generador_microservicio.py"
-            if not os.path.exists(script_generador):
-                print(f"❌ Error: No se encuentra el archivo '{script_generador}' en la misma ruta.")
-                continue
-                
-            carpeta_destino = os.path.abspath(DIR_MICROSERVICES)
-            try:
-                print(f"\n⏳ Generando esqueleto para '{nombre_ms}'...")
-                # Llamada al script externo
-                subprocess.run([sys.executable, script_generador, nombre_ms, carpeta_destino], check=True)
-                ruta_final = os.path.join(carpeta_destino, nombre_ms)
-                print(f"✅ Carpeta de trabajo establecida en: {ruta_final}")
-            except subprocess.CalledProcessError:
-                print("❌ Hubo un error al ejecutar el generador de microservicios.")
-                continue
 
         else:
             print("❌ Opción no válida. Inténtalo de nuevo.")
@@ -314,20 +290,8 @@ def resolver_nombre_y_ruta(url_o_ruta_completa: str) -> Tuple[str, str, str, Opt
 
 
 # ============================================================
-# ESCUDO ANTI-BUGS Y GESTIÓN GIT DE SALIDA (parches aplicados)
+# EJECUCIÓN DE COMANDOS EXTERNOS
 # ============================================================
-
-def validar_sintaxis_python(codigo_texto: str, nombre_archivo: str) -> bool:
-    """🛡️ Escudo Anti-Bugs: Evita aplicar parches que tengan errores sintácticos."""
-    if nombre_archivo.endswith('.py'):
-        try:
-            ast.parse(codigo_texto)
-            return True
-        except SyntaxError as e:
-            print("   ❌ [Escudo Anti-Bugs]: La propuesta de la IA rompe la sintaxis de Python.")
-            print(f"      Detalle del error: Linea {e.lineno} -> {e.msg}")
-            return False
-    return True
 
 def _run_external_command(cmd: List[str], cwd: str, error_stage: str,
                           nombre_repo: str, repo_url_o_ruta: str,
@@ -344,201 +308,6 @@ def _run_external_command(cmd: List[str], cwd: str, error_stage: str,
         logging.error(f"STDERR: {e.stderr.strip()}")
         registrar_fallo_json(nombre_repo, repo_url_o_ruta, error_stage, e)
         raise # Re-raise para propagar el error
-
-def gestionar_cambios_git(ruta_repo: str, archivos_modificados: List[str], nombre_repo: str, repo_url_o_ruta: str) -> None:
-    """Crea una rama, hace commit y sube los cambios automáticamente a origin."""
-    if not archivos_modificados:
-        return
-
-    print("\n====================================================")
-    print("🚀 GESTIÓN DE VERSIÓN (GIT AUTOMÁTICO)")
-    print("====================================================")
-    respuesta = input("👉 ¿Deseas subir estos cambios a una nueva rama remota ahora? (S/N): ").strip().lower()
-
-    if respuesta != 's':
-        print("⏭️ Omisión de subida a Git. Los cambios siguen listos en tu entorno local.")
-        return
-
-    nombre_rama = input("👉 Nombre de la nueva rama (Enter para usar nombre generado por IA): ").strip()
-    if nombre_rama.startswith("-"):
-        print("❌ Nombre de rama no válido. Se usará el nombre generado automáticamente.")
-        nombre_rama = ""
-    if not nombre_rama:
-        nombre_rama = f"fix/ia-auditoria-{datetime.now().strftime('%Y%m%d-%H%M')}"
-        print(f"   Usando nombre por defecto: {nombre_rama}")
-
-    mensaje_commit = input("👉 Mensaje del commit (Enter para usar mensaje estándar): ").strip()
-    if not mensaje_commit:
-        mensaje_commit = "Refactor: Aplicación de parches generados por IA (Auditoría automática)"
-        print(f"   Usando mensaje por defecto: '{mensaje_commit}'")
-
-    try:
-        print(f"\n   ⚙️  Creando rama '{nombre_rama}'...")
-        _run_external_command(["git", "checkout", "-b", nombre_rama], cwd=ruta_repo,
-                              error_stage="Crear Rama Git", nombre_repo=nombre_repo, repo_url_o_ruta=repo_url_o_ruta)
-
-        print("   ⚙️  Añadiendo archivos al stage (git add)...")
-        for archivo in archivos_modificados:
-            _run_external_command(["git", "add", archivo], cwd=ruta_repo,
-                                  error_stage="Git Add", nombre_repo=nombre_repo, repo_url_o_ruta=repo_url_o_ruta)
-
-        print("   ⚙️  Registrando commit...")
-        _run_external_command(["git", "commit", "-m", mensaje_commit], cwd=ruta_repo,
-                              error_stage="Git Commit", nombre_repo=nombre_repo, repo_url_o_ruta=repo_url_o_ruta)
-
-        print(f"   ⏳ Subiendo cambios a origin/{nombre_rama} (Esto puede tardar unos segundos)...")
-        _run_external_command(["git", "push", "-u", "origin", nombre_rama], cwd=ruta_repo,
-                              error_stage="Git Push", nombre_repo=nombre_repo, repo_url_o_ruta=repo_url_o_ruta)
-
-        print("   ✅ ¡Éxito! Cambios subidos correctamente.")
-
-    except subprocess.CalledProcessError:
-        # El error ya fue registrado por _run_external_command
-        print(f"\n❌ Error crítico al ejecutar comandos Git en {ruta_repo}")
-        print("   Revisa los logs para más detalles.")
-    except Exception as e:
-        logging.error(f"Error inesperado en gestión Git para {nombre_repo}: {e}", exc_info=True)
-        print(f"\n❌ Error inesperado en gestión Git: {e}")
-
-
-# ---- aplicar_mejoras_interactivas: dividido en pasos más pequeños ----
-
-def _exportar_cambios_disponibles(nombre_repo: str, puntos_con_parche: List[dict]) -> str:
-    resumen_exportacion = []
-    for idx, propuesta in enumerate(puntos_con_parche, 1):
-        resumen_exportacion.append({
-            "id_cambio": idx,
-            "archivo": propuesta.get("archivo"),
-            "proposito": propuesta.get('vulnerabilidad') or 'Modificación solicitada',
-            "explicacion": propuesta.get('explicacion_sencilla', 'Sin detalles adicionales.')
-        })
-
-    archivo_exportacion = os.path.join(DIR_JSON, f"{nombre_repo}_cambios_disponibles.json")
-    with open(archivo_exportacion, "w", encoding="utf-8") as f_export:
-        json.dump(resumen_exportacion, f_export, indent=4, ensure_ascii=False)
-
-    print(f"\n💾 Archivo de cambios disponibles exportado a: {archivo_exportacion}")
-
-    print("\n====================================================")
-    print("🛠️  RESULTADOS DE LA AUDITORÍA: CAMBIOS DISPONIBLES")
-    print("====================================================")
-    for item in resumen_exportacion:
-        print(f"[{item['id_cambio']}] 📄 Archivo: {item['archivo']}")
-        print(f"    ⚠️  Propósito: {item['proposito']}")
-        print(f"    🎓 Explicación: {item['explicacion']}")
-        print("-" * 50)
-
-    return archivo_exportacion
-
-
-def _pedir_seleccion_usuario(total_disponibles: int) -> List[int]:
-    print("\n👉 Introduce los números de los cambios a aplicar, separados por comas (ej. 1, 3).")
-    print("👉 O escribe 'T' para aplicarlos Todos. (Presiona Enter para cancelar).")
-    seleccion = input("Selección: ").strip().lower()
-
-    if not seleccion:
-        print("⏭️ Aplicación de cambios cancelada por el usuario.")
-        return []
-
-    if seleccion in ('t', 'todos'):
-        return list(range(1, total_disponibles + 1))
-
-    indices_a_aplicar = []
-    try:
-        for p in seleccion.split(','):
-            num = int(p.strip())
-            if 1 <= num <= total_disponibles:
-                indices_a_aplicar.append(num)
-    except ValueError:
-        print("❌ Error en el formato. Usa números separados por comas. Operación cancelada.")
-        return []
-
-    if not indices_a_aplicar:
-        print("⏭️ No se seleccionó ningún cambio válido dentro del rango.")
-    return indices_a_aplicar
-
-
-def _aplicar_parches_seleccionados(ruta_base_proyecto: str, puntos_con_parche: List[dict], indices: List[int],
-                                   nombre_repo: str, repo_url_o_ruta: str) -> List[str]:
-    print("\n⚙️  APLICANDO CAMBIOS SELECCIONADOS...")
-    archivos_modificados_exito = []
-
-    # Normalizar la ruta base del proyecto para comparaciones seguras
-    ruta_base_proyecto_abs = os.path.abspath(ruta_base_proyecto)
-
-    for idx in indices:
-        propuesta = puntos_con_parche[idx - 1]
-        archivo_relativo = propuesta.get("archivo")
-        codigo_ia = propuesta["codigo_corregido_completo"]
-
-        print(f"\nProcesando [{idx}]: {archivo_relativo}...")
-
-        if not archivo_relativo:
-            print("   ❌ Propuesta de cambio sin nombre de archivo. Omitiendo.")
-            continue
-
-        # 🛡️ Escudo Anti-Path Traversal
-        ruta_archivo_real = os.path.join(ruta_base_proyecto_abs, archivo_relativo)
-        ruta_archivo_real_abs = os.path.abspath(ruta_archivo_real)
-
-        if not ruta_archivo_real_abs.startswith(ruta_base_proyecto_abs):
-            print(f"   ❌ [Escudo Anti-Path Traversal]: Intento de escribir fuera del directorio del proyecto: {archivo_relativo}")
-            print("      Cambio omitido automáticamente para proteger tu sistema.")
-            continue
-
-        if not validar_sintaxis_python(codigo_ia, archivo_relativo):
-            print("   ⏭️ Cambio omitido automáticamente para proteger tu repositorio (Error Sintáctico).")
-            continue
-
-        if not os.path.exists(ruta_archivo_real):
-            print(f"   ❌ El archivo no existe en el disco local: {ruta_archivo_real}")
-            continue
-
-        try:
-            shutil.copy2(ruta_archivo_real, f"{ruta_archivo_real}.bak")
-            with open(ruta_archivo_real, "w", encoding="utf-8") as f_out:
-                f_out.write(codigo_ia)
-            print("   ✅ ¡Archivo modificado con éxito! (Copia .bak guardada)")
-            archivos_modificados_exito.append(archivo_relativo)
-        except Exception as e:
-            print(f"   ❌ Error escribiendo cambios: {e}")
-
-    if archivos_modificados_exito:
-        gestionar_cambios_git(ruta_base_proyecto, archivos_modificados_exito, nombre_repo, repo_url_o_ruta)
-
-    return archivos_modificados_exito
-
-
-def aplicar_mejoras_interactivas(nombre_repo: str, ruta_base_proyecto: str, repo_url_o_ruta: str) -> None:
-    """Lee el reporte, exporta un JSON con los cambios disponibles y permite aplicarlos selectivamente."""
-    archivo_auditoria = os.path.join(DIR_JSON, f"{nombre_repo}_auditoria.json")
-    if not os.path.exists(archivo_auditoria):
-        return
-
-    try:
-        with open(archivo_auditoria, "r", encoding="utf-8") as f:
-            reporte = json.load(f)
-
-        puntos_criticos = reporte.get("puntos_criticos_seguridad", [])
-        puntos_con_parche = [p for p in puntos_criticos if p.get("codigo_corregido_completo")]
-
-        if not puntos_con_parche:
-            print(f"\n✨ El asistente no propuso modificaciones de código automáticas para '{nombre_repo}'.")
-            return
-
-        _exportar_cambios_disponibles(nombre_repo, puntos_con_parche)
-
-        indices_a_aplicar = _pedir_seleccion_usuario(len(puntos_con_parche))
-        if not indices_a_aplicar:
-            return
-
-        _aplicar_parches_seleccionados(ruta_base_proyecto, puntos_con_parche, indices_a_aplicar,
-                                       nombre_repo, repo_url_o_ruta)
-
-    except Exception as e:
-        print(f"⚠️ Error procesando la interactividad para {nombre_repo}: {e}")
-        logging.error(f"Error en aplicar_mejoras_interactivas para {nombre_repo}: {e}", exc_info=True)
-
 
 # ============================================================
 # OPERACIONES GIT DE ENTRADA (clonado/checkout) CON TRAZABILIDAD DE FALLOS
@@ -639,7 +408,7 @@ def procesar_repo(url_o_ruta_completa: str, default_branch: Optional[str] = None
                 raise subprocess.CalledProcessError(proc.returncode, comando, output=f"Agente terminó con código {proc.returncode}")
 
         logging.info(f"--- PROCESO PARA {nombre_repo} FINALIZADO CON ÉXITO ---")
-        return nombre_repo, ruta_trabajo, url_o_ruta # Retorna url_o_ruta para aplicar parches
+        return nombre_repo, ruta_trabajo, url_o_ruta
     except subprocess.CalledProcessError as e:
         logging.error(f"El subproceso del agente falló para {nombre_repo}. Código: {e.returncode}")
         logging.error(f"Salida del agente: {e.output}")
@@ -700,7 +469,7 @@ def main() -> None:
         if opcion_cambios:
             cambios_a_enviar = opcion_cambios
 
-    # Lista para almacenar información de repositorios procesados exitosamente para la fase de aplicación de parches
+    # Lista para almacenar información de los repositorios procesados exitosamente
     processed_repos_info = [] # List of (nombre_repo, ruta_ejecucion, url_o_ruta_sin_rama)
 
     if args.jobs > 1 and len(repos_a_procesar) > 1:
@@ -738,23 +507,9 @@ def main() -> None:
                 print(f"   Revisa la carpeta de logs/ y {DIR_JSON}/{nombre_repo_temp}_fallo.json")
                 registrar_fallo_json(nombre_repo_temp, url_o_ruta_temp, "Procesamiento de Repositorio", e) # Registrar el error
 
-    # Fase de post-procesamiento: Aplicar mejoras interactivas secuencialmente
-    print("\n====================================================")
-    print("✨ APLICACIÓN INTERACTIVA DE MEJORAS (POST-PROCESO)")
-    print("====================================================")
-    for nombre_repo, ruta_ejecucion, url_o_ruta_sin_rama in processed_repos_info:
-        try:
-            aplicar_mejoras_interactivas(nombre_repo, ruta_ejecucion, url_o_ruta_sin_rama)
-        except KeyboardInterrupt:
-            print(f"\n⏹️  Cancelado por el usuario mientras se aplicaban mejoras a '{nombre_repo}'.")
-            registrar_fallo_json(nombre_repo, url_o_ruta_sin_rama, "Interrupción Manual (Aplicar Mejoras)", "Cancelado por el usuario (Ctrl+C)")
-            break
-        except Exception as e:
-            print(f"\n❌ Error fatal aplicando mejoras a {nombre_repo}: {e}")
-            print(f"   Revisa la carpeta de logs/ y {DIR_JSON}/{nombre_repo}_fallo.json")
-            registrar_fallo_json(nombre_repo, url_o_ruta_sin_rama, "Aplicación de Mejoras", e)
-
     print("\n🏁 PROCESAMIENTO FINALIZADO.")
+    print("   ↳ Si pediste cambios (-c/--cambios o menú 'Implementar un cambio'), Gemini ya los")
+    print("     generó y escribió directamente en los archivos correspondientes.")
 
 
 if __name__ == "__main__":
