@@ -1,0 +1,15 @@
+{
+    "fecha_hora": "2026-07-21 15:09:14",
+    "duracion_segundos": 10.86,
+    "total_solicitados": 1,
+    "total_exitosos": 1,
+    "total_fallidos": 0,
+    "exitosos": [
+        {
+            "microservicio": "agente_python_analysis",
+            "ruta_ejecucion": "C:\\Users\\tx1f6\\OneDrive - SIX\\Escritorio\\agente_python_analysis",
+            "origen": "C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis"
+        }
+    ],
+    "fallidos": []
+}

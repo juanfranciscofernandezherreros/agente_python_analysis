@@ -117,3 +117,116 @@
 2026-07-20 17:34:15 [INFO]    ↳ Si pediste cambios (-c/--cambios o menú 'Implementar un cambio'), Gemini ya los
 2026-07-20 17:34:15 [INFO]      generó y escribió directamente en los archivos correspondientes.
 2026-07-20 17:34:15 [INFO] Total de repositorios procesados exitosamente: 1 de 1.
+2026-07-21 14:47:16 [INFO] Logger configurado para 'agente_python_analysis'. Los logs se guardarán en 'logs\agente_python_analysis.log'.
+2026-07-21 14:47:16 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python_analysis ---
+2026-07-21 14:47:16 [INFO] Ruta de origen: C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis
+2026-07-21 14:47:16 [INFO] Carpeta de trabajo: C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis
+2026-07-21 14:47:16 [INFO] Origen detectado: Carpeta local 'C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis'.
+2026-07-21 14:47:16 [INFO] Instrucciones de cambios para la IA: 'Puedes decir que mejoras puedo realizar en este agente'
+2026-07-21 14:47:16 [INFO] Ejecutando agente de auditoría/refactorización para 'agente_python_analysis'. Comando: C:\Program Files\Python39\python.exe code_auditor_agent.py C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis --cambios Puedes decir que mejoras puedo realizar en este agente
+2026-07-21 14:47:30 [INFO] [AGENTE] 
+2026-07-21 14:47:30 [INFO] [AGENTE] 🔍 [code_auditor_agent.py]: Iniciando proceso para 'agente_python_analysis'...
+2026-07-21 14:47:30 [INFO] [AGENTE] ↳ [code_auditor_agent.py]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis...
+2026-07-21 14:47:30 [INFO] [AGENTE] ↳ [code_auditor_agent.py]: 14 archivos extraídos y analizados.
+2026-07-21 14:47:31 [INFO] [AGENTE] 
+2026-07-21 14:47:31 [INFO] [AGENTE] 📦 [code_auditor_agent.py] Proyecto dividido dinámicamente en 1 lotes por límite de contexto.
+2026-07-21 14:47:31 [INFO] [AGENTE] 
+2026-07-21 14:47:31 [INFO] [AGENTE] 🚀 [code_auditor_agent.py] Iniciando envío CONCURRENTE puro (todas las peticiones a la vez)...
+2026-07-21 14:47:32 [INFO] [AGENTE] ⚠️ [code_auditor_agent.py] [Lote 1] APIError: API key not valid. Please pass a valid API key.
+2026-07-21 14:47:32 [INFO] [AGENTE] ⏳ [code_auditor_agent.py] [Lote 1] Reintentando en 20s...
+2026-07-21 14:47:52 [INFO] [AGENTE] ⚠️ [code_auditor_agent.py] [Lote 1] APIError: API key not valid. Please pass a valid API key.
+2026-07-21 14:47:52 [INFO] [AGENTE] ⏳ [code_auditor_agent.py] [Lote 1] Reintentando en 40s...
+2026-07-21 14:48:32 [INFO] [AGENTE] ⚠️ [code_auditor_agent.py] [Lote 1] APIError: API key not valid. Please pass a valid API key.
+2026-07-21 14:48:32 [INFO] [AGENTE] ❌ [code_auditor_agent.py] [Lote 1] Falló tras todos los reintentos.
+2026-07-21 14:48:32 [INFO] [AGENTE] ❌ [code_auditor_agent.py] Falló el análisis de Gemini.
+2026-07-21 14:48:32 [ERROR] El agente para 'agente_python_analysis' falló. Salida: Agente terminó con código 1
+2026-07-21 14:48:32 [ERROR] El subproceso del agente falló para agente_python_analysis. Código: 1. Detalles: Agente terminó con código 1
+2026-07-21 14:48:32 [ERROR] Fallo registrado en JSON para 'agente_python_analysis' en etapa 'Ejecución de Agente'. Ver: json_output\agente_python_analysis_fallo.json
+2026-07-21 14:48:32 [ERROR] 
+❌ Error fatal en C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis: Command '['C:\\Program Files\\Python39\\python.exe', 'code_auditor_agent.py', 'C:\\Users\\tx1f6\\OneDrive - SIX\\Escritorio\\agente_python_analysis', '--cambios', 'Puedes decir que mejoras puedo realizar en este agente']' returned non-zero exit status 1.
+2026-07-21 14:48:32 [ERROR]    Revisa la carpeta de logs/ y json_output/agente_python_analysis_fallo.json para más detalles.
+2026-07-21 14:48:32 [ERROR] Fallo registrado en JSON para 'agente_python_analysis' en etapa 'Procesamiento de Repositorio'. Ver: json_output\agente_python_analysis_fallo.json
+2026-07-21 14:48:32 [INFO] 
+🏁 PROCESAMIENTO FINALIZADO.
+2026-07-21 14:48:32 [INFO]    ↳ Si pediste cambios (-c/--cambios o menú 'Implementar un cambio'), Gemini ya los
+2026-07-21 14:48:32 [INFO]      generó y escribió directamente en los archivos correspondientes.
+2026-07-21 14:48:32 [INFO] Total de repositorios procesados exitosamente: 0 de 1.
+2026-07-21 14:50:19 [INFO] Logger configurado para 'agente_python_analysis'. Los logs se guardarán en 'logs\agente_python_analysis.log'.
+2026-07-21 14:50:19 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python_analysis ---
+2026-07-21 14:50:19 [INFO] Ruta de origen: C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis
+2026-07-21 14:50:19 [INFO] Carpeta de trabajo: C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis
+2026-07-21 14:50:19 [INFO] Origen detectado: Carpeta local 'C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis'.
+2026-07-21 14:50:19 [INFO] Ejecutando agente de auditoría/refactorización para 'agente_python_analysis'. Comando: C:\Program Files\Python39\python.exe code_auditor_agent.py C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis
+2026-07-21 14:50:23 [INFO] [AGENTE] 
+2026-07-21 14:50:23 [INFO] [AGENTE] ⏩ [code_auditor_agent.py]: Auditoría previa encontrada para 'agente_python_analysis'.
+2026-07-21 14:50:23 [INFO] [AGENTE] 
+2026-07-21 14:50:23 [INFO] [AGENTE] ============================================================
+2026-07-21 14:50:23 [INFO] [AGENTE] 📋 RESULTADOS DE LA AUDITORÍA / CAMBIOS
+2026-07-21 14:50:23 [INFO] [AGENTE] ============================================================
+2026-07-21 14:50:23 [INFO] [AGENTE] [1] 🟢 INFORMATIVA | Archivo: readme.md | ℹ️ solo observación
+2026-07-21 14:50:23 [INFO] [AGENTE] ↳ Archivo no encontrado para aplicar la modificación
+2026-07-21 14:50:23 [INFO] [AGENTE] ------------------------------------------------------------
+2026-07-21 14:50:23 [INFO] [AGENTE] 
+2026-07-21 14:50:23 [INFO] [AGENTE] ✅ [Reportero] 1 punto(s) reportado(s). Revisa el detalle completo en: C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis\json_output\agente_python_analysis_auditoria.json
+2026-07-21 14:50:23 [INFO] --- PROCESO PARA agente_python_analysis FINALIZADO CON ÉXITO ---
+2026-07-21 14:50:23 [INFO] 
+🏁 PROCESAMIENTO FINALIZADO.
+2026-07-21 14:50:23 [INFO]    ↳ Se realizó una auditoría general. Revisa los archivos JSON generados en la carpeta 'json_output'.
+2026-07-21 14:50:23 [INFO] Total de repositorios procesados exitosamente: 1 de 1.
+2026-07-21 14:55:39 [INFO] Logger configurado para 'agente_python_analysis'. Los logs se guardarán en 'logs\agente_python_analysis.log'.
+2026-07-21 14:55:39 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python_analysis ---
+2026-07-21 14:55:39 [INFO] Ruta de origen: C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis
+2026-07-21 14:55:39 [INFO] Carpeta de trabajo: C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis
+2026-07-21 14:55:39 [INFO] Origen detectado: Carpeta local 'C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis'.
+2026-07-21 14:55:39 [INFO] Instrucciones de cambios para la IA: '1. Resumen final en HTML/JSONAhora reporter_agent.py genera salida en html_output/ pero se invoca desde code_auditor_agent.py, no desde el orchestrator. Añadiría al final de main() un paso que agregue todos los resultados (processed_repos_info + fallos registrados en json_output/) en un único dashboard/resumen (ej. resumen_ejecucion.html) con: repos OK, repos fallidos, tiempo total, enlaces a cada log.'
+2026-07-21 14:55:39 [INFO] Ejecutando agente de auditoría/refactorización para 'agente_python_analysis'. Comando: C:\Program Files\Python39\python.exe code_auditor_agent.py C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis --cambios 1. Resumen final en HTML/JSONAhora reporter_agent.py genera salida en html_output/ pero se invoca desde code_auditor_agent.py, no desde el orchestrator. Añadiría al final de main() un paso que agregue todos los resultados (processed_repos_info + fallos registrados en json_output/) en un único dashboard/resumen (ej. resumen_ejecucion.html) con: repos OK, repos fallidos, tiempo total, enlaces a cada log.
+2026-07-21 14:55:46 [INFO] [AGENTE] 
+2026-07-21 14:55:46 [INFO] [AGENTE] 🔍 [code_auditor_agent.py]: Iniciando proceso para 'agente_python_analysis'...
+2026-07-21 14:55:46 [INFO] [AGENTE] ↳ [code_auditor_agent.py]: Extrayendo archivos desde C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis...
+2026-07-21 14:55:46 [INFO] [AGENTE] ↳ [code_auditor_agent.py]: 15 archivos extraídos y analizados.
+2026-07-21 14:55:47 [INFO] [AGENTE] 
+2026-07-21 14:55:47 [INFO] [AGENTE] 📦 [code_auditor_agent.py] Proyecto dividido dinámicamente en 1 lotes por límite de contexto.
+2026-07-21 14:55:47 [INFO] [AGENTE] 
+2026-07-21 14:55:47 [INFO] [AGENTE] 🚀 [code_auditor_agent.py] Iniciando envío CONCURRENTE puro (todas las peticiones a la vez)...
+2026-07-21 14:55:48 [INFO] [AGENTE] ⚠️ [code_auditor_agent.py] [Lote 1] APIError: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-07-21 14:55:48 [INFO] [AGENTE] ⏳ [code_auditor_agent.py] [Lote 1] Reintentando en 20s...
+2026-07-21 14:56:08 [INFO] [AGENTE] ⚠️ [code_auditor_agent.py] [Lote 1] APIError: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-07-21 14:56:08 [INFO] [AGENTE] ⏳ [code_auditor_agent.py] [Lote 1] Reintentando en 40s...
+2026-07-21 14:56:48 [INFO] [AGENTE] ⚠️ [code_auditor_agent.py] [Lote 1] APIError: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-07-21 14:56:48 [INFO] [AGENTE] ❌ [code_auditor_agent.py] [Lote 1] Falló tras todos los reintentos.
+2026-07-21 14:56:48 [INFO] [AGENTE] ❌ [code_auditor_agent.py] Falló el análisis de Gemini.
+2026-07-21 14:56:48 [ERROR] El agente para 'agente_python_analysis' falló. Salida: Agente terminó con código 1
+2026-07-21 14:56:48 [ERROR] El subproceso del agente falló para agente_python_analysis. Código: 1. Detalles: Agente terminó con código 1
+2026-07-21 14:56:48 [ERROR] Fallo registrado en JSON para 'agente_python_analysis' en etapa 'Ejecución de Agente'. Ver: json_output\agente_python_analysis_fallo.json
+2026-07-21 14:56:48 [ERROR] 
+❌ Error fatal en C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis: Command '['C:\\Program Files\\Python39\\python.exe', 'code_auditor_agent.py', 'C:\\Users\\tx1f6\\OneDrive - SIX\\Escritorio\\agente_python_analysis', '--cambios', '1. Resumen final en HTML/JSONAhora reporter_agent.py genera salida en html_output/ pero se invoca desde code_auditor_agent.py, no desde el orchestrator. Añadiría al final de main() un paso que agregue todos los resultados (processed_repos_info + fallos registrados en json_output/) en un único dashboard/resumen (ej. resumen_ejecucion.html) con: repos OK, repos fallidos, tiempo total, enlaces a cada log.']' returned non-zero exit status 1.
+2026-07-21 14:56:48 [ERROR]    Revisa la carpeta de logs/ y json_output/agente_python_analysis_fallo.json para más detalles.
+2026-07-21 14:56:48 [ERROR] Fallo registrado en JSON para 'agente_python_analysis' en etapa 'Procesamiento de Repositorio'. Ver: json_output\agente_python_analysis_fallo.json
+2026-07-21 14:56:48 [INFO] 
+🏁 PROCESAMIENTO FINALIZADO.
+2026-07-21 14:56:48 [INFO]    ↳ Si pediste cambios (-c/--cambios o menú 'Implementar un cambio'), Gemini ya los
+2026-07-21 14:56:48 [INFO]      generó y escribió directamente en los archivos correspondientes.
+2026-07-21 14:56:48 [INFO] Total de repositorios procesados exitosamente: 0 de 1.
+2026-07-21 15:09:03 [INFO] Logger configurado para 'agente_python_analysis'. Los logs se guardarán en 'logs\agente_python_analysis.log'.
+2026-07-21 15:09:03 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: agente_python_analysis ---
+2026-07-21 15:09:03 [INFO] Ruta de origen: C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis
+2026-07-21 15:09:03 [INFO] Carpeta de trabajo: C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis
+2026-07-21 15:09:03 [INFO] Origen detectado: Carpeta local 'C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis'.
+2026-07-21 15:09:03 [INFO] Ejecutando agente de auditoría/refactorización para 'agente_python_analysis'. Comando: C:\Program Files\Python39\python.exe code_auditor_agent.py C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis
+2026-07-21 15:09:13 [INFO] [AGENTE] 
+2026-07-21 15:09:13 [INFO] [AGENTE] ⏩ [code_auditor_agent.py]: Auditoría previa encontrada para 'agente_python_analysis'.
+2026-07-21 15:09:13 [INFO] [AGENTE] 
+2026-07-21 15:09:13 [INFO] [AGENTE] ============================================================
+2026-07-21 15:09:13 [INFO] [AGENTE] 📋 RESULTADOS DE LA AUDITORÍA / CAMBIOS
+2026-07-21 15:09:13 [INFO] [AGENTE] ============================================================
+2026-07-21 15:09:13 [INFO] [AGENTE] [1] 🟢 INFORMATIVA | Archivo: readme.md | ℹ️ solo observación
+2026-07-21 15:09:13 [INFO] [AGENTE] ↳ Archivo no encontrado para aplicar la modificación
+2026-07-21 15:09:13 [INFO] [AGENTE] ------------------------------------------------------------
+2026-07-21 15:09:13 [INFO] [AGENTE] 
+2026-07-21 15:09:13 [INFO] [AGENTE] ✅ [Reportero] 1 punto(s) reportado(s). Revisa el detalle completo en: C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis\json_output\agente_python_analysis_auditoria.json
+2026-07-21 15:09:13 [INFO] --- PROCESO PARA agente_python_analysis FINALIZADO CON ÉXITO ---
+2026-07-21 15:09:13 [INFO] 
+🏁 PROCESAMIENTO FINALIZADO.
+2026-07-21 15:09:13 [INFO]    ↳ Se realizó una auditoría general. Revisa los archivos JSON generados en la carpeta 'json_output'.
+2026-07-21 15:09:13 [INFO] Total de repositorios procesados exitosamente: 1 de 1.
+2026-07-21 15:09:14 [INFO] 📊 Resumen de ejecución generado: html_output\resumen_ejecucion.html (y json_output\resumen_ejecucion.json)

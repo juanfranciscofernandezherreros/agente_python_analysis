@@ -15,6 +15,7 @@ módulos separados que se importan aquí:
 
 import os
 import sys
+import time
 import logging
 import argparse
 import concurrent.futures
@@ -28,6 +29,7 @@ from file_selector import seleccionar_con_tkinter
 from repo_resolver import resolver_nombre_y_ruta
 from git_operations import check_git_installed
 from repo_processor import procesar_repo
+from summary_report import generar_resumen
 
 
 # ============================================================
@@ -158,6 +160,7 @@ def main() -> None:
         else:
             logging.info("No se especificaron cambios adicionales para la auditoría.")
 
+    inicio_batch = time.time()
     processed_repos_info = []  # List of (nombre_repo, ruta_ejecucion, url_o_ruta_sin_rama)
 
     if args.jobs > 1 and len(repos_a_procesar) > 1:
@@ -205,6 +208,9 @@ def main() -> None:
         logging.info("   ↳ Se realizó una auditoría general. Revisa los archivos JSON generados en la carpeta 'json_output'.")
 
     logging.info(f"Total de repositorios procesados exitosamente: {len(processed_repos_info)} de {len(repos_a_procesar)}.")
+
+    duracion_total = time.time() - inicio_batch
+    generar_resumen(processed_repos_info, repos_a_procesar, duracion_total)
 
 
 if __name__ == "__main__":

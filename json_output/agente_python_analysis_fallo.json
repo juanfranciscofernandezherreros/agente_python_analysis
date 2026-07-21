@@ -1,0 +1,13 @@
+[
+    {
+        "fecha_hora": "2026-07-21 14:56:48",
+        "microservicio": "agente_python_analysis",
+        "ruta_origen": "C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis",
+        "etapa_fallida": "Procesamiento de Repositorio",
+        "detalles_error": {
+            "tipo": "CalledProcessError",
+            "mensaje": "Command '['C:\\\\Program Files\\\\Python39\\\\python.exe', 'code_auditor_agent.py', 'C:\\\\Users\\\\tx1f6\\\\OneDrive - SIX\\\\Escritorio\\\\agente_python_analysis', '--cambios', '1. Resumen final en HTML/JSONAhora reporter_agent.py genera salida en html_output/ pero se invoca desde code_auditor_agent.py, no desde el orchestrator. Añadiría al final de main() un paso que agregue todos los resultados (processed_repos_info + fallos registrados en json_output/) en un único dashboard/resumen (ej. resumen_ejecucion.html) con: repos OK, repos fallidos, tiempo total, enlaces a cada log.']' returned non-zero exit status 1. | Detalle: Agente terminó con código 1",
+            "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\tx1f6\\OneDrive - SIX\\Escritorio\\agente_python_analysis\\orchestrator.py\", line 187, in main\n    nombre_repo, ruta_ejecucion, url_o_ruta_sin_rama = procesar_repo(repo, default_branch=args.branch, existing_action=args.existing, cambios=cambios_a_enviar)\n  File \"C:\\Users\\tx1f6\\OneDrive - SIX\\Escritorio\\agente_python_analysis\\repo_processor.py\", line 112, in procesar_repo\n    raise subprocess.CalledProcessError(proc.returncode, comando, output=error_output)\nsubprocess.CalledProcessError: Command '['C:\\\\Program Files\\\\Python39\\\\python.exe', 'code_auditor_agent.py', 'C:\\\\Users\\\\tx1f6\\\\OneDrive - SIX\\\\Escritorio\\\\agente_python_analysis', '--cambios', '1. Resumen final en HTML/JSONAhora reporter_agent.py genera salida en html_output/ pero se invoca desde code_auditor_agent.py, no desde el orchestrator. Añadiría al final de main() un paso que agregue todos los resultados (processed_repos_info + fallos registrados en json_output/) en un único dashboard/resumen (ej. resumen_ejecucion.html) con: repos OK, repos fallidos, tiempo total, enlaces a cada log.']' returned non-zero exit status 1.\n"
+        }
+    }
+]

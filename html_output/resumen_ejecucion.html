@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Resumen de ejecución - Orquestador</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f7f9; }
+  h1 { color: #222; }
+  .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+  .card { background: white; border-radius: 8px; padding: 1rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .card b { font-size: 1.4rem; display: block; }
+  table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 2rem; }
+  th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; font-size: 0.9rem; }
+  th { background: #eee; }
+  .ok { color: #1a7f37; }
+  .fail { color: #c02020; }
+</style>
+</head>
+<body>
+  <h1>🏁 Resumen de ejecución del orquestador</h1>
+  <p>Generado: 2026-07-21 15:09:14 &nbsp;|&nbsp; Duración: 10.86 s</p>
+  <div class="stats">
+    <div class="card">Solicitados<b>1</b></div>
+    <div class="card">Exitosos<b class="ok">1</b></div>
+    <div class="card">Fallidos<b class="fail">0</b></div>
+  </div>
+
+  <h2 class="ok">✅ Repositorios procesados con éxito</h2>
+  <table>
+    <tr><th>Microservicio</th><th>Origen</th><th>Ruta de ejecución</th></tr>
+    <tr><td>agente_python_analysis</td><td>C:/Users/tx1f6/OneDrive - SIX/Escritorio/agente_python_analysis</td><td>C:\Users\tx1f6\OneDrive - SIX\Escritorio\agente_python_analysis</td></tr>
+  </table>
+
+  <h2 class="fail">❌ Repositorios fallidos</h2>
+  <table>
+    <tr><th>Microservicio</th><th>Etapa fallida</th><th>Mensaje</th></tr>
+    <tr><td colspan='3'>Ninguno</td></tr>
+  </table>
+</body>
+</html>
