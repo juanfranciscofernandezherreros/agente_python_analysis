@@ -1,0 +1,88 @@
+2026-07-21 11:53:47 [INFO] Logger configurado para 'rft-devtools-kafka-cucumber-main'. Los logs se guardarán en 'logs\rft-devtools-kafka-cucumber-main.log'.
+2026-07-21 11:53:47 [INFO] --- INICIANDO PROCESO PARA EL REPOSITORIO: rft-devtools-kafka-cucumber-main ---
+2026-07-21 11:53:47 [INFO] Ruta de origen: C:/Develop/rft-devtools-kafka-cucumber-main
+2026-07-21 11:53:47 [INFO] Carpeta de trabajo: C:\Develop\rft-devtools-kafka-cucumber-main
+2026-07-21 11:53:47 [INFO] Origen detectado: Carpeta local 'C:/Develop/rft-devtools-kafka-cucumber-main'.
+2026-07-21 11:53:47 [INFO] Instrucciones de cambios para la IA: 'Quiero que añadas un log para todos los pasos y quites los system.out'
+2026-07-21 11:53:47 [INFO] Ejecutando agente de auditoría/refactorización para 'rft-devtools-kafka-cucumber-main'. Comando: C:\Program Files\Python39\python.exe code_auditor_agent.py C:\Develop\rft-devtools-kafka-cucumber-main --cambios Quiero que añadas un log para todos los pasos y quites los system.out
+2026-07-21 11:53:56 [INFO] [AGENTE] 
+2026-07-21 11:53:56 [INFO] [AGENTE] 🔍 [code_auditor_agent.py]: Iniciando proceso para 'rft-devtools-kafka-cucumber-main'...
+2026-07-21 11:53:56 [INFO] [AGENTE] ↳ [code_auditor_agent.py]: Extrayendo archivos desde C:\Develop\rft-devtools-kafka-cucumber-main...
+2026-07-21 11:53:57 [INFO] [AGENTE] ↳ [code_auditor_agent.py]: 29 archivos extraídos y analizados.
+2026-07-21 11:53:58 [INFO] [AGENTE] 
+2026-07-21 11:53:58 [INFO] [AGENTE] 📦 [code_auditor_agent.py] Proyecto dividido dinámicamente en 1 lotes por límite de contexto.
+2026-07-21 11:53:58 [INFO] [AGENTE] 
+2026-07-21 11:53:58 [INFO] [AGENTE] 🚀 [code_auditor_agent.py] Iniciando envío CONCURRENTE puro (todas las peticiones a la vez)...
+2026-07-21 11:54:35 [INFO] [AGENTE] ✅ [code_auditor_agent.py] [Lote 1] Procesamiento completado con éxito.
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+2026-07-21 11:54:35 [INFO] [AGENTE] 🛑 [DEBUG] INTENTO DE ESCRITURA CAPTURADO
+2026-07-21 11:54:35 [INFO] [AGENTE] 👉 RUTA DESTINO: C:\Develop\rft-devtools-kafka-cucumber-main\source\src\main\java\com\sixgroup\refit\devkafka\AvroDummyFiller.java
+2026-07-21 11:54:35 [INFO] [AGENTE] 👉 CONTENIDO A ESCRIBIR (Primeros 300 caracteres):
+2026-07-21 11:54:35 [INFO] [AGENTE] package com.sixgroup.refit.devkafka;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] import lombok.extern.slf4j.Slf4j;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.apache.avro.Schema;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.apache.avro.generic.GenericData;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.apache.avro.generic.GenericRecord;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] import java.util.List;
+2026-07-21 11:54:35 [INFO] [AGENTE] import java.util.Map;
+2026-07-21 11:54:35 [INFO] [AGENTE] import java.util.Objects;
+2026-07-21 11:54:35 [INFO] [AGENTE] import java.util.Random;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] @Slf4j
+2026-07-21 11:54:35 [INFO] [AGENTE] pu
+2026-07-21 11:54:35 [INFO] [AGENTE] ... [recortado para no llenar la pantalla] ...
+2026-07-21 11:54:35 [INFO] [AGENTE] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] ✅ [code_auditor_agent.py]: Cambio escrito DIRECTAMENTE en -> C:\Develop\rft-devtools-kafka-cucumber-main\source\src\main\java\com\sixgroup\refit\devkafka\AvroDummyFiller.java
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+2026-07-21 11:54:35 [INFO] [AGENTE] 🛑 [DEBUG] INTENTO DE ESCRITURA CAPTURADO
+2026-07-21 11:54:35 [INFO] [AGENTE] 👉 RUTA DESTINO: C:\Develop\rft-devtools-kafka-cucumber-main\source\src\test\java\com\sixgroup\refit\devkafka\AvroDummyFillerTest.java
+2026-07-21 11:54:35 [INFO] [AGENTE] 👉 CONTENIDO A ESCRIBIR (Primeros 300 caracteres):
+2026-07-21 11:54:35 [INFO] [AGENTE] package com.sixgroup.refit.devkafka;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.apache.avro.Schema;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.apache.avro.generic.GenericRecord;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.junit.jupiter.api.DisplayName;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.junit.jupiter.api.Test;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] import static org.junit.jupiter.api.Assertions.*;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] class AvroDummyFillerTest {
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] private static final St
+2026-07-21 11:54:35 [INFO] [AGENTE] ... [recortado para no llenar la pantalla] ...
+2026-07-21 11:54:35 [INFO] [AGENTE] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] ✅ [code_auditor_agent.py]: Cambio escrito DIRECTAMENTE en -> C:\Develop\rft-devtools-kafka-cucumber-main\source\src\test\java\com\sixgroup\refit\devkafka\AvroDummyFillerTest.java
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+2026-07-21 11:54:35 [INFO] [AGENTE] 🛑 [DEBUG] INTENTO DE ESCRITURA CAPTURADO
+2026-07-21 11:54:35 [INFO] [AGENTE] 👉 RUTA DESTINO: C:\Develop\rft-devtools-kafka-cucumber-main\source\src\test\java\com\sixgroup\refit\devkafka\AvroJsonConverterTest.java
+2026-07-21 11:54:35 [INFO] [AGENTE] 👉 CONTENIDO A ESCRIBIR (Primeros 300 caracteres):
+2026-07-21 11:54:35 [INFO] [AGENTE] package com.sixgroup.refit.devkafka;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.apache.avro.Schema;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.apache.avro.generic.GenericRecord;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.junit.jupiter.api.DisplayName;
+2026-07-21 11:54:35 [INFO] [AGENTE] import org.junit.jupiter.api.Test;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] import java.io.IOException;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] import static org.junit.jupiter.api.Assertions.*;
+2026-07-21 11:54:35 [INFO] [AGENTE] 
+2026-07-21 11:54:35 [INFO] [AGENTE] class AvroJsonConverterTest
+2026-07-21 11:54:35 [INFO] [AGENTE] ... [recortado para no llenar la pantalla] ...
+2026-07-21 11:54:36 [INFO] [AGENTE] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+2026-07-21 11:54:36 [INFO] [AGENTE] 
+2026-07-21 11:54:36 [INFO] [AGENTE] ✅ [code_auditor_agent.py]: Cambio escrito DIRECTAMENTE en -> C:\Develop\rft-devtools-kafka-cucumber-main\source\src\test\java\com\sixgroup\refit\devkafka\AvroJsonConverterTest.java
+2026-07-21 11:54:36 [INFO] [AGENTE] ✨ [code_auditor_agent.py]: 3 archivo(s) modificados directamente.
+2026-07-21 11:54:36 [INFO] --- PROCESO PARA rft-devtools-kafka-cucumber-main FINALIZADO CON ÉXITO ---
+2026-07-21 11:54:36 [INFO] 
+🏁 PROCESAMIENTO FINALIZADO.
+2026-07-21 11:54:36 [INFO]    ↳ Si pediste cambios (-c/--cambios o menú 'Implementar un cambio'), Gemini ya los
+2026-07-21 11:54:36 [INFO]      generó y escribió directamente en los archivos correspondientes.
+2026-07-21 11:54:36 [INFO] Total de repositorios procesados exitosamente: 1 de 1.
